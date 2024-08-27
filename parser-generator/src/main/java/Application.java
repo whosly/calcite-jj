@@ -1,45 +1,3 @@
-# calcite jj
-
-## 介绍
-calcite parser代码生成
-
-![code-generate-process](doc/calcite-parser-code-generate-process.png)
-
-## 模块
-
-### parser-jj-generator
-根据 parser-jj 模板生成 parser-jj。
-
-codegen 模块的文件全部都拷贝自对应版本的 calclite core/src/main/codegen路径。 如
-https://github.com/apache/calcite/tree/main/core/src/main/codegen
-
-然后把 default_config.fmpp 中的parser属性与config.fmpp中的parser属性合并。
-就可以通过mvn package命令生成可用的 Parser.jj（代码文件） 了。
-当然，如果有定制化修改的需求，也可以在这个阶段修改config.fmpp
-
-```
-# 拷贝 src/main/codegen， 包含 config.fmpp、templates/Parser.jj（模板文件）
-
-mvn clean
-
-mvn package
-
-# 此时会在 target\generated-sources\fmpp\javacc 下生成 Parser.jj（代码文件）
-```
-
-
-### parser-generator
-将 parser-jj-generator 模块中生成的 Parser.jj 代码文件 (路径 target\generated-sources\fmpp\javacc)
-copy至此项目中。
-
-```
-mvn initialize
-
-mvn package
-```
-
-此时就可以直接进行编码开发工作了。
-```java
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.schema.SchemaPlus;
@@ -77,16 +35,3 @@ public class Application {
         }
     }
 }
-```
-
-#### FAQ JackySqlParserImpl.java:16000:: 可能尚未初始化变量startNum
-修改代码。
-
-
-### one-step-generator
-```
-
-mvn clean
-
-mvn initialize
-```
