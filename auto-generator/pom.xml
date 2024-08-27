@@ -10,11 +10,18 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>parser-generator</artifactId>
-    <description>根据 parser-jj 代码文件生成 Parser Java代码</description>
+    <artifactId>auto-generator</artifactId>
+    <description>
+        根据 parser-jj 模板生成 Parser Java代码。
+        不需要对Parser.jj进行定制化修改，通过连续运行两个插件来生成代码
+    </description>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.drill.tools</groupId>
+                <artifactId>drill-fmpp-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>javacc-maven-plugin</artifactId>

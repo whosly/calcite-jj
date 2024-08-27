@@ -12,32 +12,11 @@
     <artifactId>parser-jj-generator</artifactId>
     <description>根据 parser-jj 模板生成 parser-jj</description>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.calcite</groupId>
-            <artifactId>calcite-core</artifactId>
-        </dependency>
-    </dependencies>
-
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.drill.tools</groupId>
                 <artifactId>drill-fmpp-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <configuration>
-                            <config>src/main/codegen/config.fmpp</config>
-                            <output>${project.build.directory}/generated-sources/fmpp</output>
-                            <templates>src/main/codegen/templates</templates>
-                        </configuration>
-                        <id>generate-fmpp-sources</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
