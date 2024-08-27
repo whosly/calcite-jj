@@ -29,6 +29,7 @@
         <module>parser-generator</module>
         <module>auto-generator</module>
         <module>new-grammar</module>
+        <module>calcite-schema</module>
     </modules>
 
     <dependencyManagement>

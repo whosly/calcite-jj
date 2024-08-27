@@ -1,0 +1,44 @@
+server:
+  # 服务器的HTTP端口，默认为80
+  port: 18080
+
+spring:
+  application:
+    name: calcite-pro
+  thymeleaf:
+    cache: false # Enable template caching.
+    check-template: true # Check that the template exists before rendering it.
+    check-template-location: true # Check that the templates location exists.
+    enabled: true # Enable Thymeleaf view resolution for Web frameworks.
+    encoding: UTF-8 # Template files encoding.
+    excluded-view-names: # Comma-separated list of view names that should be excluded from resolution.
+    mode: HTML # Template mode to be applied to templates. See also StandardTemplateModeHandlers.
+#    prefix: classpath:/templates/ # Prefix that gets prepended to view names when building a URL.
+    reactive:
+      max-chunk-size: # Maximum size of data buffers used for writing to the response,in bytes.
+      media-types: # Media types supported by the view technology.
+    servlet:
+      content-type: text/html # Content-Type value written to HTTP responses.
+#    suffix: .html # Suffix that gets appended to view names when building a URL.
+    template-resolver-order: # Order of the template resolver in the chain.
+#    view-names: # Comma-separated list of view names that can be resolved.
+  webflux:
+    static-path-pattern: /**
+  web:
+    resources:
+      static-locations:
+        - classpath:/META-INF/resources/
+        - classpath:/resources/
+        - classpath:/static/
+        - classpath:/templates/
+
+xss:
+  # 过滤开关
+  enabled: true
+  # 排除链接（多个用逗号分隔）, .*\\.css,.*\\.jpg,.*\\.js,.*\\.map，注意使用的是正则表达式
+  excludes: /monitor/*,.*\\.css,.*\\.jpg,.*\\.js,.*\\.map
+  # 需要处理的服务地址
+  urlPatterns: /service/*,/tool/*
+
+logback:
+  logdir: logs/calcite

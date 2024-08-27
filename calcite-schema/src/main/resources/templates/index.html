@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" style="padding-bottom: 54px;">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <link href="https://s.codealy.com/favicon.ico" rel="shortcut icon" type="image/x-icon">
+
+    <!-- 重置样式表和公共样式表以及主页样式表 -->
+    <link rel="stylesheet" href="https://s.codealy.com/whosly/reset.css" type="text/css">
+    <link rel="stylesheet" href="https://s.codealy.com/whosly/public.css" type="text/css">
+
+    <script src="https://s.codealy.com/whosly/s/js/jQuery/jquery-3.6.0.min.js"></script>
+</head>
+
+<body style="margin: 0; padding: 0;background-color: #1E1E1E">
+
+    <!--
+    使用th:text属性来从模型（由控制器中的model.addAttribute添加）中获取message属性的值，并
+    将其设置为<h1>标签的文本内容
+    -->
+    <h1 th:text="${now}">-</h1>
+
+</body>
+</html>

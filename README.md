@@ -15,7 +15,9 @@ calcite parser代码生成逻辑
     * 新增自定义语法的例子工程
         * CREATE MATERIALIZED VIEW [ IF NOT EXISTS ] view_name AS query
         * JACKY JOB 'query'
-
+* calcite-schema
+  * 多种数据源加载的示例
+  * 自定义语法 submit job as query 的示例
 
 # 模块
 
@@ -552,3 +554,9 @@ JACKY JOB
 'SELECT IDS, NAME FROM TEST WHERE ID < 5'
 ```
 
+## calcite-schema
+多种数据源加载的示例
+
+关于自定义语法的实现，参考《new-grammar》章节。
+
+关于多种数据源加载的实现，见源代码 [schema](calcite-schema/src/main/java/com/whosly/calcite/schema/ISchemaLoader.java)
