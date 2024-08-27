@@ -5,6 +5,8 @@ calcite parser代码生成逻辑
 ![code-generate-process](doc/calcite-parser-code-generate-process.png)
 
 # 模块介绍
+* [load-parser-jj](./load-parser-jj/)
+    * 获取 Calcite 源码中的 Parser.jj 文件
 * [parser-jj-generator](./parser-jj-generator/)
     * 根据 parser-jj 模板文件生成 parser-jj 代码文件
 * [parser-generator](./parser-generator/)
@@ -20,6 +22,14 @@ calcite parser代码生成逻辑
   * 自定义语法 submit job as query 的示例
 
 # 模块
+
+## load-parser-jj
+使用 Maven 插件 maven-dependency-plugin 直接从 Calcite 源码包中进行拷贝，
+将 target/codegen/templates/Parser.jj 文件拷贝到项目构建目录下。
+
+```java
+mvn initialize
+```
 
 ## parser-jj-generator
 根据 parser-jj 模板生成 parser-jj。

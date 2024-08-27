@@ -25,6 +25,7 @@
     </properties>
 
     <modules>
+        <module>load-parser-jj</module>
         <module>parser-jj-generator</module>
         <module>parser-generator</module>
         <module>auto-generator</module>
