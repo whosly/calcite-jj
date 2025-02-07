@@ -10,7 +10,7 @@
 	</parent>
 
 	<artifactId>calcite-schema</artifactId>
-	<name>calcite-schema</name>
+	<name>06-calcite-schema</name>
 	<description>calcite-schema 多种数据源加载</description>
 
 	<properties>

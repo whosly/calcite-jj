@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>new-grammar</artifactId>
+    <name>05-new-grammar</name>
 
     <build>
         <plugins>
