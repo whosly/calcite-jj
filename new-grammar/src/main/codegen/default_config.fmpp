@@ -13,69 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file is an FMPP (http://fmpp.sourceforge.net/) configuration file to
-# allow clients to extend Calcite's SQL parser to support application specific
-# SQL statements, literals or data types.
-#
-# Calcite's parser grammar file (Parser.jj) is written in javacc
-# (https://javacc.github.io/javacc/) with Freemarker (http://freemarker.org/)
-# variables to allow clients to:
-#   1. have custom parser implementation class and package name.
-#   2. insert new parser method implementations written in javacc to parse
-#      custom:
-#      a) SQL statements.
-#      b) literals.
-#      c) data types.
-#   3. add new keywords to support custom SQL constructs added as part of (2).
-#   4. add import statements needed by inserted custom parser implementations.
-#
-# Parser template file (Parser.jj) along with this file are packaged as
-# part of the calcite-core-<version>.jar under "codegen" directory.
+# Default data declarations for parsers.
+# Each of these may be overridden in a parser's config.fmpp file.
+# In addition, each parser must define "package" and "class".
+parser: {
+  # List of additional classes and packages to import.
+  # Example: "org.apache.calcite.sql.*", "java.util.List".
+  imports: [
+  ]
 
-data: {
-  # Data declarations for this parser.
-  #
-  # Default declarations are in default_config.fmpp; if you do not include a
-  # declaration ('imports' or 'nonReservedKeywords', for example) in this file,
-  # FMPP will use the declaration from default_config.fmpp.
-  parser: {
-    # Generated parser implementation package and class name.
-    package: "org.apache.calcite.sql.parser.impl",
-    class: "JackySqlParserImpl",
+  # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
+  # not a reserved keyword, add it to the 'nonReservedKeywords' section.
+  keywords: [
+  ]
 
-    # List of files in @includes directory that have parser method
-    # implementations for parsing custom SQL statements, literals or types
-    # given as part of "statementParserMethods", "literalParserMethods" or
-    # "dataTypeParserMethods".
-    # Example: "parserImpls.ftl".
-    # @includes目录中具有解析器方法的文件列表
-    # 解析自定义SQL语句、文本或类型的实现
-    # 作为“statementParserMethods”、“literalParserMethods”或“dataTypeParserMethods”的一部分给出。
-    implementationFiles: [
-      "parserImpls.ftl"
-    ]
-
-    # List of additional classes and packages to import.
-    # Example: "org.apache.calcite.sql.*", "java.util.List".
-    # 导入处理的语句
-    imports: [
-        "org.apache.calcite.sql.CreateMaterializedView",
-        "org.apache.calcite.sql.SqlJacky"
-    ]
-
-    # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
-    # not a reserved keyword, add it to the 'nonReservedKeywords' section.
-    # 新关键字列表。示例:“DATABASES”、“TABLES”。如果关键字不是一个保留关键字，将其添加到“无保留关键字”部分。
-    keywords: [
-        "IF",
-        "MATERIALIZED",
-        "JACKY",
-        "JOB"
-    ]
-
-    # List of keywords from "keywords" section that are not reserved.
-    # “keywords”部分中未保留的关键字列表。
-    nonReservedKeywords: [
+  # List of keywords from "keywords" section that are not reserved.
+  nonReservedKeywords: [
     "A"
     "ABSENT"
     "ABSOLUTE"
@@ -412,107 +365,96 @@ data: {
     "XML"
     "YEARS"
     "ZONE"
-    ]
+  ]
 
-    # List of non-reserved keywords to add;
-    # items in this list become non-reserved.
-    nonReservedKeywordsToAdd: [
-    ]
+  # List of non-reserved keywords to add;
+  # items in this list become non-reserved.
+  nonReservedKeywordsToAdd: [
+  ]
 
-    # List of non-reserved keywords to remove;
-    # items in this list become reserved.
-    nonReservedKeywordsToRemove: [
-    ]
+  # List of non-reserved keywords to remove;
+  # items in this list become reserved.
+  nonReservedKeywordsToRemove: [
+  ]
 
-    # List of additional join types. Each is a method with no arguments.
-    # Example: "LeftSemiJoin".
-    # 其他连接类型的列表。每个方法都是没有参数的方法。
-    joinTypes: [
-    ]
+  # List of additional join types. Each is a method with no arguments.
+  # Example: "LeftSemiJoin".
+  joinTypes: [
+  ]
 
-    # List of methods for parsing custom SQL statements.
-    # Return type of method implementation should be 'SqlNode'.
-    # Example: "SqlShowDatabases()", "SqlShowTables()".
-    # 用于解析自定义SQL语句的方法列表。
-    statementParserMethods: [
-        "SqlCreateMaterializedView()",
-        "SqlJacky()"
-    ]
+  # List of methods for parsing custom SQL statements.
+  # Return type of method implementation should be 'SqlNode'.
+  # Example: "SqlShowDatabases()", "SqlShowTables()".
+  statementParserMethods: [
+  ]
 
-    # List of methods for parsing custom literals.
-    # Return type of method implementation should be "SqlNode".
-    # Example: ParseJsonLiteral().
-    # 解析自定义文本的方法列表
-    literalParserMethods: [
-    ]
+  # List of methods for parsing custom literals.
+  # Return type of method implementation should be "SqlNode".
+  # Example: ParseJsonLiteral().
+  literalParserMethods: [
+  ]
 
-    # List of methods for parsing custom data types.
-    # Return type of method implementation should be "SqlTypeNameSpec".
-    # Example: SqlParseTimeStampZ().
-    # 用于解析自定义数据类型的方法列表。
-    dataTypeParserMethods: [
-    ]
+  # List of methods for parsing custom data types.
+  # Return type of method implementation should be "SqlTypeNameSpec".
+  # Example: SqlParseTimeStampZ().
+  dataTypeParserMethods: [
+  ]
 
-    # List of methods for parsing builtin function calls.
-    # Return type of method implementation should be "SqlNode".
-    # Example: "DateTimeConstructorCall()".
-    builtinFunctionCallMethods: [
-    ]
+  # List of methods for parsing builtin function calls.
+  # Return type of method implementation should be "SqlNode".
+  # Example: "DateTimeConstructorCall()".
+  builtinFunctionCallMethods: [
+  ]
 
-    # List of methods for parsing extensions to "ALTER <scope>" calls.
-    # Each must accept arguments "(SqlParserPos pos, String scope)".
-    # Example: "SqlAlterTable".
-    # 每个都必须接受参数 "(SqlParserPos pos, String scope)".
-    # 解析扩展到“ALTER ”调用的方法。
-    alterStatementParserMethods: [
-    ]
+  # List of methods for parsing extensions to "ALTER <scope>" calls.
+  # Each must accept arguments "(SqlParserPos pos, String scope)".
+  # Example: "SqlAlterTable".
+  alterStatementParserMethods: [
+  ]
 
-    # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
-    # Each must accept arguments "(SqlParserPos pos, boolean replace)".
-    # Example: "SqlCreateForeignSchema".
-    # 解析扩展以"CREATE [OR REPLACE]"调用的方法列表。
-    # 每个都必须接受参数 "(SqlParserPos pos, String scope)".
-    createStatementParserMethods: [
-    ]
+  # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
+  # Each must accept arguments "(SqlParserPos pos, boolean replace)".
+  # Example: "SqlCreateForeignSchema".
+  createStatementParserMethods: [
+  ]
 
-    # List of methods for parsing extensions to "DROP" calls.
-    # Each must accept arguments "(SqlParserPos pos)".
-    # Example: "SqlDropSchema".
-    # 解析扩展到“DROP”调用的方法列表。
-    # 必须有构造方法 "(SqlParserPos pos)".
-    dropStatementParserMethods: [
-    ]
+  # List of methods for parsing extensions to "DROP" calls.
+  # Each must accept arguments "(SqlParserPos pos)".
+  # Example: "SqlDropSchema".
+  dropStatementParserMethods: [
+  ]
 
-    # List of methods for parsing extensions to "TRUNCATE" calls.
-    # Each must accept arguments "(SqlParserPos pos)".
-    # Example: "SqlTruncate".
-    truncateStatementParserMethods: [
-    ]
+  # List of methods for parsing extensions to "TRUNCATE" calls.
+  # Each must accept arguments "(SqlParserPos pos)".
+  # Example: "SqlTruncate".
+  truncateStatementParserMethods: [
+  ]
 
-    # Binary operators tokens.
-    # Example: "< INFIX_CAST: \"::\" >".
-    binaryOperatorsTokens: [
-    ]
+  # Binary operators tokens.
+  # Example: "< INFIX_CAST: \"::\" >".
+  binaryOperatorsTokens: [
+  ]
 
-    # Binary operators initialization.
-    # Example: "InfixCast".
-    extraBinaryExpressions: [
-    ]
+  # Binary operators initialization.
+  # Example: "InfixCast".
+  extraBinaryExpressions: [
+  ]
 
-    # Custom identifier token.
-    # Example: "< IDENTIFIER: (<LETTER>|<DIGIT>)+ >".
-    customIdentifierToken: ""
+  # List of files in @includes directory that have parser method
+  # implementations for parsing custom SQL statements, literals or types
+  # given as part of "statementParserMethods", "literalParserMethods" or
+  # "dataTypeParserMethods".
+  # Example: "parserImpls.ftl".
+  implementationFiles: [
+  ]
 
-    includePosixOperators: false
-    # 是否包含CompoundIdentifier解析
-    includeCompoundIdentifier: true
-    includeBraces: true
-    includeAdditionalDeclarations: false
-    includeParsingStringLiteralAsArrayLiteral: false
-  }
-}
+  # Custom identifier token.
+  # Example: "< IDENTIFIER: (<LETTER>|<DIGIT>)+ >".
+  customIdentifierToken: ""
 
-# freemarker模板的位置
-freemarkerLinks: {
-  includes: includes/
+  includePosixOperators: false
+  includeCompoundIdentifier: true
+  includeBraces: true
+  includeAdditionalDeclarations: false
+  includeParsingStringLiteralAsArrayLiteral: false
 }

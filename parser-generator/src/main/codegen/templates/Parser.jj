@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+<@pp.dropOutputFile />
+
+<@pp.changeOutputFile name="javacc/Parser.jj" />
 
 options {
     STATIC = false;
@@ -6,10 +25,13 @@ options {
 }
 
 
-PARSER_BEGIN(JackySqlParserImpl)
+PARSER_BEGIN(${parser.class})
 
-package org.apache.calcite.sql.parser.impl;
+package ${parser.package};
 
+<#list (parser.imports!default.parser.imports) as importStr>
+import ${importStr};
+</#list>
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.TimeUnit;
@@ -119,7 +141,7 @@ import static org.apache.calcite.util.Static.RESOURCE;
  *
  * <p>The public wrapper for this parser is {@link SqlParser}.
  */
-public class JackySqlParserImpl extends SqlAbstractParserImpl
+public class ${parser.class} extends SqlAbstractParserImpl
 {
     private static final Logger LOGGER = CalciteTrace.getParserTracer();
 
@@ -148,7 +170,7 @@ public class JackySqlParserImpl extends SqlAbstractParserImpl
      */
     public static final SqlParserImplFactory FACTORY = new SqlParserImplFactory() {
         public SqlAbstractParserImpl getParser(Reader reader) {
-            final JackySqlParserImpl parser = new JackySqlParserImpl(reader);
+            final ${parser.class} parser = new ${parser.class}(reader);
             if (reader instanceof SourceStringReader) {
                 final String sql =
                     ((SourceStringReader) reader).getSourceString();
@@ -170,10 +192,10 @@ public class JackySqlParserImpl extends SqlAbstractParserImpl
     }
 
     public Metadata getMetadata() {
-        synchronized (JackySqlParserImpl.class) {
+        synchronized (${parser.class}.class) {
             if (metadata == null) {
                 metadata = new MetadataImpl(
-                    new JackySqlParserImpl(new java.io.StringReader("")));
+                    new ${parser.class}(new java.io.StringReader("")));
             }
             return metadata;
         }
@@ -185,7 +207,7 @@ public class JackySqlParserImpl extends SqlAbstractParserImpl
 
     public void switchTo(SqlAbstractParserImpl.LexicalState state) {
         final int stateOrdinal =
-            Arrays.asList(JackySqlParserImplTokenManager.lexStateNames)
+            Arrays.asList(${parser.class}TokenManager.lexStateNames)
                 .indexOf(state.name());
         token_source.SwitchTo(stateOrdinal);
     }
@@ -249,7 +271,7 @@ public class JackySqlParserImpl extends SqlAbstractParserImpl
     }
 }
 
-PARSER_END(JackySqlParserImpl)
+PARSER_END(${parser.class})
 
 
 /***************************************
@@ -1098,10 +1120,27 @@ SqlNode SqlStmt() :
 }
 {
     (
+<#-- Add methods to parse additional statements here -->
+<#list (parser.statementParserMethods!default.parser.statementParserMethods) as method>
+        LOOKAHEAD(2) stmt = ${method}
+    |
+</#list>
         stmt = SqlSetOption(Span.of(), null)
     |
         stmt = SqlAlter()
     |
+<#if (parser.createStatementParserMethods!default.parser.createStatementParserMethods)?size != 0>
+        stmt = SqlCreate()
+    |
+</#if>
+<#if (parser.dropStatementParserMethods!default.parser.dropStatementParserMethods)?size != 0>
+        stmt = SqlDrop()
+    |
+</#if>
+<#if (parser.truncateStatementParserMethods!default.parser.truncateStatementParserMethods)?size != 0>
+        stmt = SqlTruncate()
+    |
+</#if>
         stmt = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     |
         stmt = SqlExplain()
@@ -1137,6 +1176,10 @@ SqlNode SqlStmtEof() :
     }
 }
 
+<#-- Add implementations of additional parser statement calls here -->
+<#list (parser.implementationFiles!default.parser.implementationFiles) as file>
+    <#include "/@includes/"+file />
+</#list>
 
 SqlNodeList ParenthesizedKeyValueOptionCommaList() :
 {
@@ -1934,6 +1977,10 @@ SqlLiteral JoinType() :
 {
     (
     LOOKAHEAD(3) // required for "LEFT SEMI JOIN" in Babel
+<#list (parser.joinTypes!default.parser.joinTypes) as method>
+        joinType = ${method}()
+    |
+</#list>
         <JOIN> { joinType = JoinType.INNER; }
     |
         <INNER> <JOIN> { joinType = JoinType.INNER; }
@@ -3653,6 +3700,14 @@ List<Object> Expression2(ExprContext exprContext) :
                     |
                         <SIMILAR> <TO> { op = SqlStdOperatorTable.SIMILAR_TO; }
                     )
+                <#if (parser.includePosixOperators!default.parser.includePosixOperators)>
+                |
+                    <NEGATE> <TILDE> { op = SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_SENSITIVE; }
+                    [ <STAR> { op = SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_INSENSITIVE; } ]
+                |
+                    <TILDE> { op = SqlStdOperatorTable.POSIX_REGEX_CASE_SENSITIVE; }
+                    [ <STAR> { op = SqlStdOperatorTable.POSIX_REGEX_CASE_INSENSITIVE; } ]
+                </#if>
                 )
                 list2 = Expression2(ExprContext.ACCEPT_SUB_QUERY) {
                     list.add(new SqlParserUtil.ToTreeListItem(op, s.pos()));
@@ -3669,6 +3724,10 @@ List<Object> Expression2(ExprContext exprContext) :
                     }
                 ]
             |
+            <#list (parser.extraBinaryExpressions!default.parser.extraBinaryExpressions) as extra >
+                ${extra}(list, exprContext, s)
+            |
+            </#list>
                 LOOKAHEAD(3) op = BinaryRowOperator() {
                     checkNonQueryExpression(exprContext);
                     list.add(new SqlParserUtil.ToTreeListItem(op, getPos()));
@@ -4224,6 +4283,11 @@ SqlAlter SqlAlter() :
     <ALTER> { s = span(); }
     scope = Scope()
     (
+<#-- additional literal parser methods are included here -->
+<#list (parser.alterStatementParserMethods!default.parser.alterStatementParserMethods) as method>
+        alterNode = ${method}(s, scope)
+    |
+</#list>
 
         alterNode = SqlSetOption(s, scope)
     )
@@ -4239,8 +4303,84 @@ String Scope() :
     ( <SYSTEM> | <SESSION> ) { return token.image.toUpperCase(Locale.ROOT); }
 }
 
+<#if (parser.createStatementParserMethods!default.parser.createStatementParserMethods)?size != 0>
+/**
+ * Parses a CREATE statement.
+ */
+SqlCreate SqlCreate() :
+{
+    final Span s;
+    boolean replace = false;
+    final SqlCreate create;
+}
+{
+    <CREATE> { s = span(); }
+    [
+        <OR> <REPLACE> {
+            replace = true;
+        }
+    ]
+    (
+<#-- additional literal parser methods are included here -->
+<#list (parser.createStatementParserMethods!default.parser.createStatementParserMethods) as method>
+        create = ${method}(s, replace)
+        <#sep>| LOOKAHEAD(2) </#sep>
+</#list>
+    )
+    {
+        return create;
+    }
+}
+</#if>
 
+<#if (parser.dropStatementParserMethods!default.parser.dropStatementParserMethods)?size != 0>
+/**
+ * Parses a DROP statement.
+ */
+SqlDrop SqlDrop() :
+{
+    final Span s;
+    boolean replace = false;
+    final SqlDrop drop;
+}
+{
+    <DROP> { s = span(); }
+    (
+<#-- additional literal parser methods are included here -->
+<#list (parser.dropStatementParserMethods!default.parser.dropStatementParserMethods) as method>
+        drop = ${method}(s, replace)
+        <#sep>|</#sep>
+</#list>
+    )
+    {
+        return drop;
+    }
+}
+</#if>
 
+<#if (parser.truncateStatementParserMethods!default.parser.truncateStatementParserMethods)?size != 0>
+/**
+ * Parses a TRUNCATE statement.
+ */
+SqlTruncate SqlTruncate() :
+{
+    final Span s;
+    final SqlTruncate truncate;
+}
+{
+    <TRUNCATE> { s = span(); }
+    (
+<#-- additional literal parser methods are included here -->
+<#list (parser.truncateStatementParserMethods!default.parser.truncateStatementParserMethods) as method>
+        truncate = ${method}(s)
+        <#sep>|</#sep>
+</#list>
+    )
+    {
+        return truncate;
+    }
+}
+</#if>
 
 /**
  * Parses a literal expression, allowing continued string literals.
@@ -4279,6 +4419,11 @@ SqlNode NonIntervalLiteral() :
         e = SpecialLiteral()
     |
         e = DateTimeLiteral()
+<#-- additional literal parser methods are included here -->
+<#list (parser.literalParserMethods!default.parser.literalParserMethods) as method>
+    |
+        e = ${method}
+</#list>
     )
     {
         return e;
@@ -4693,6 +4838,17 @@ SqlNode ArrayConstructor() :
             return SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR.createCall(
                 s.end(this), args.getList());
         }
+<#if (parser.includeParsingStringLiteralAsArrayLiteral!default.parser.includeParsingStringLiteralAsArrayLiteral) >
+    |
+        p = SimpleStringLiteral() {
+            try {
+                return SqlParserUtil.parseArrayLiteral(p);
+            } catch (SqlParseException ex) {
+                throw SqlUtil.newContextException(getPos(),
+                    RESOURCE.illegalArrayExpression(p));
+            }
+        }
+</#if>
     )
 }
 
@@ -5342,6 +5498,7 @@ SqlNodeList SimpleIdentifierOrList() :
     }
 }
 
+<#if (parser.includeCompoundIdentifier!default.parser.includeCompoundIdentifier) >
 /**
  * Parses a compound identifier.
  */
@@ -5425,6 +5582,9 @@ Pair<SqlNodeList, SqlNodeList> ParenthesizedCompoundIdentifierList() :
         return Pair.of(new SqlNodeList(list, s.end(this)), new SqlNodeList(extendList, s.end(this)));
     }
 }
+<#else>
+  <#include "/@includes/compoundIdentifier.ftl" />
+</#if>
 
 /**
  * Parses a NEW UDT(...) expression.
@@ -5517,6 +5677,13 @@ SqlTypeNameSpec TypeName() :
 }
 {
     (
+<#-- additional types are included here -->
+<#-- put custom data types in front of Calcite core data types -->
+<#list (parser.dataTypeParserMethods!default.parser.dataTypeParserMethods) as method>
+        LOOKAHEAD(2)
+        typeNameSpec = ${method}
+    |
+</#list>
         LOOKAHEAD(2)
         typeNameSpec = SqlTypeName(s)
     |
@@ -6157,6 +6324,10 @@ SqlNode BuiltinFunctionCall() :
     |
         node = TimeTruncFunctionCall() { return node; }
     |
+<#list (parser.builtinFunctionCallMethods!default.parser.builtinFunctionCallMethods) as method>
+        node = ${method} { return node; }
+    |
+</#list>
         node = MatchRecognizeFunctionCall() { return node; }
     |
         node = JsonExistsFunctionCall() { return node; }
@@ -7193,7 +7364,7 @@ SqlNode StandardFloorCeilOptions(Span s, boolean floorFlag) :
         }
     )?
     <RPAREN> {
-        SqlOperator op = SqlStdOperatorTable.floorCeil(floorFlag, this.conformance);
+        SqlOperator op = SqlStdOperatorTable.floorCeil(floorFlag, (SqlConformanceEnum) this.conformance);
         function =  op.createCall(s.end(this), args);
     }
     (
@@ -8359,6 +8530,10 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < YEAR: "YEAR" >
 |   < YEARS: "YEARS" >
 |   < ZONE: "ZONE" >
+<#-- additional parser keywords are included here -->
+<#list (parser.keywords!default.parser.keywords) as keyword>
+|   < ${keyword}: "${keyword}" >
+</#list>
 }
 
 /**
@@ -8395,118 +8570,13 @@ void NonReservedKeyWord0of3() :
 }
 {
     (
-        <A>
-    |   <ACTION>
-    |   <ADMIN>
-    |   <APPLY>
-    |   <ASC>
-    |   <ATTRIBUTE>
-    |   <BERNOULLI>
-    |   <CASCADE>
-    |   <CENTURY>
-    |   <CHARACTERS>
-    |   <CHARACTER_SET_SCHEMA>
-    |   <COLLATION>
-    |   <COLLATION_SCHEMA>
-    |   <COMMAND_FUNCTION_CODE>
-    |   <CONDITION_NUMBER>
-    |   <CONSTRAINT_CATALOG>
-    |   <CONSTRAINT_SCHEMA>
-    |   <CURSOR_NAME>
-    |   <DATE_DIFF>
-    |   <DATETIME_INTERVAL_CODE>
-    |   <DAYOFWEEK>
-    |   <DECADE>
-    |   <DEFERRED>
-    |   <DEGREE>
-    |   <DESC>
-    |   <DIAGNOSTICS>
-    |   <DOW>
-    |   <DYNAMIC_FUNCTION>
-    |   <EPOCH>
-    |   <EXCLUDE>
-    |   <FIRST>
-    |   <FORTRAN>
-    |   <G>
-    |   <GEOMETRY>
-    |   <GRANTED>
-    |   <HOP>
-    |   <ILIKE>
-    |   <IMPLEMENTATION>
-    |   <INCREMENT>
-    |   <INSTANCE>
-    |   <ISODOW>
-    |   <JAVA>
-    |   <KEY>
-    |   <LABEL>
-    |   <LEVEL>
-    |   <M>
-    |   <MAXVALUE>
-    |   <MESSAGE_TEXT>
-    |   <MILLISECOND>
-    |   <MONTHS>
-    |   <NAME>
-    |   <NESTING>
-    |   <NULLS>
-    |   <OCTETS>
-    |   <ORDERING>
-    |   <OUTPUT>
-    |   <PARAMETER_MODE>
-    |   <PARAMETER_SPECIFIC_CATALOG>
-    |   <PARTIAL>
-    |   <PASSTHROUGH>
-    |   <PERCENTILE_CONT>
-    |   <PLACING>
-    |   <PRECEDING>
-    |   <PRIVILEGES>
-    |   <QUARTERS>
-    |   <REPEATABLE>
-    |   <RESTART>
-    |   <RETURNED_LENGTH>
-    |   <RETURNING>
-    |   <ROUTINE>
-    |   <ROUTINE_SCHEMA>
-    |   <SCALE>
-    |   <SCOPE_CATALOGS>
-    |   <SECONDS>
-    |   <SELF>
-    |   <SERIALIZABLE>
-    |   <SESSION>
-    |   <SIZE>
-    |   <SPECIFIC_NAME>
-    |   <SQL_BIT>
-    |   <SQL_CHAR>
-    |   <SQL_DECIMAL>
-    |   <SQL_INTEGER>
-    |   <SQL_INTERVAL_DAY_TO_MINUTE>
-    |   <SQL_INTERVAL_HOUR_TO_MINUTE>
-    |   <SQL_INTERVAL_MINUTE_TO_SECOND>
-    |   <SQL_INTERVAL_YEAR>
-    |   <SQL_LONGVARCHAR>
-    |   <SQL_NCLOB>
-    |   <SQL_REAL>
-    |   <SQL_TIMESTAMP>
-    |   <SQL_TSI_FRAC_SECOND>
-    |   <SQL_TSI_MINUTE>
-    |   <SQL_TSI_SECOND>
-    |   <SQL_VARBINARY>
-    |   <STATEMENT>
-    |   <STYLE>
-    |   <TABLE_NAME>
-    |   <TIME_DIFF>
-    |   <TIMESTAMPDIFF>
-    |   <TOP_LEVEL_COUNT>
-    |   <TRANSACTIONS_COMMITTED>
-    |   <TRANSFORMS>
-    |   <TRIGGER_SCHEMA>
-    |   <UNBOUNDED>
-    |   <UNDER>
-    |   <USAGE>
-    |   <USER_DEFINED_TYPE_NAME>
-    |   <UTF32>
-    |   <VIEW>
-    |   <WORK>
-    |   <XML>
+<#list (parser.nonReservedKeywords!default.parser.nonReservedKeywords) + (parser.nonReservedKeywordsToAdd!default.parser.nonReservedKeywordsToAdd) as keyword>
+<#if keyword?index == 0>
+        <${keyword}>
+<#elseif keyword?index % 3 == 0>
+    |   <${keyword}>
+</#if>
+</#list>
     )
 }
 
@@ -8516,118 +8586,13 @@ void NonReservedKeyWord1of3() :
 }
 {
     (
-        <ABSENT>
-    |   <ADA>
-    |   <AFTER>
-    |   <ARRAY_AGG>
-    |   <ASSERTION>
-    |   <ATTRIBUTES>
-    |   <BREADTH>
-    |   <CATALOG>
-    |   <CHAIN>
-    |   <CHARACTER_SET_CATALOG>
-    |   <CLASS_ORIGIN>
-    |   <COLLATION_CATALOG>
-    |   <COLUMN_NAME>
-    |   <COMMITTED>
-    |   <CONNECTION>
-    |   <CONSTRAINT_NAME>
-    |   <CONSTRUCTOR>
-    |   <DATA>
-    |   <DATE_TRUNC>
-    |   <DATETIME_INTERVAL_PRECISION>
-    |   <DAYOFYEAR>
-    |   <DEFAULTS>
-    |   <DEFINED>
-    |   <DEPTH>
-    |   <DESCRIPTION>
-    |   <DISPATCH>
-    |   <DOY>
-    |   <DYNAMIC_FUNCTION_CODE>
-    |   <ERROR>
-    |   <EXCLUDING>
-    |   <FOLLOWING>
-    |   <FOUND>
-    |   <GENERAL>
-    |   <GO>
-    |   <GROUP_CONCAT>
-    |   <HOURS>
-    |   <IMMEDIATE>
-    |   <INCLUDE>
-    |   <INITIALLY>
-    |   <INSTANTIABLE>
-    |   <ISOLATION>
-    |   <JSON>
-    |   <KEY_MEMBER>
-    |   <LAST>
-    |   <LIBRARY>
-    |   <MAP>
-    |   <MESSAGE_LENGTH>
-    |   <MICROSECOND>
-    |   <MINUTES>
-    |   <MORE_>
-    |   <NAMES>
-    |   <NORMALIZED>
-    |   <NUMBER>
-    |   <OPTION>
-    |   <ORDINALITY>
-    |   <OVERRIDING>
-    |   <PARAMETER_NAME>
-    |   <PARAMETER_SPECIFIC_NAME>
-    |   <PASCAL>
-    |   <PAST>
-    |   <PERCENTILE_DISC>
-    |   <PLAN>
-    |   <PRESERVE>
-    |   <PUBLIC>
-    |   <READ>
-    |   <REPLACE>
-    |   <RESTRICT>
-    |   <RETURNED_OCTET_LENGTH>
-    |   <RLIKE>
-    |   <ROUTINE_CATALOG>
-    |   <ROW_COUNT>
-    |   <SCHEMA>
-    |   <SCOPE_NAME>
-    |   <SECTION>
-    |   <SEPARATOR>
-    |   <SERVER>
-    |   <SETS>
-    |   <SOURCE>
-    |   <SQL_BIGINT>
-    |   <SQL_BLOB>
-    |   <SQL_CLOB>
-    |   <SQL_DOUBLE>
-    |   <SQL_INTERVAL_DAY>
-    |   <SQL_INTERVAL_DAY_TO_SECOND>
-    |   <SQL_INTERVAL_HOUR_TO_SECOND>
-    |   <SQL_INTERVAL_MONTH>
-    |   <SQL_INTERVAL_YEAR_TO_MONTH>
-    |   <SQL_LONGVARNCHAR>
-    |   <SQL_NUMERIC>
-    |   <SQL_SMALLINT>
-    |   <SQL_TINYINT>
-    |   <SQL_TSI_HOUR>
-    |   <SQL_TSI_MONTH>
-    |   <SQL_TSI_WEEK>
-    |   <SQL_VARCHAR>
-    |   <STRING_AGG>
-    |   <SUBCLASS_ORIGIN>
-    |   <TEMPORARY>
-    |   <TIME_TRUNC>
-    |   <TIMESTAMP_DIFF>
-    |   <TRANSACTION>
-    |   <TRANSACTIONS_ROLLED_BACK>
-    |   <TRIGGER_CATALOG>
-    |   <TUMBLE>
-    |   <UNCOMMITTED>
-    |   <UNPIVOT>
-    |   <USER_DEFINED_TYPE_CATALOG>
-    |   <USER_DEFINED_TYPE_SCHEMA>
-    |   <UTF8>
-    |   <WEEK>
-    |   <WRAPPER>
-    |   <YEARS>
+<#list (parser.nonReservedKeywords!default.parser.nonReservedKeywords) + (parser.nonReservedKeywordsToAdd!default.parser.nonReservedKeywordsToAdd) as keyword>
+<#if keyword?index == 1>
+        <${keyword}>
+<#elseif keyword?index % 3 == 1>
+    |   <${keyword}>
+</#if>
+</#list>
     )
 }
 
@@ -8637,118 +8602,13 @@ void NonReservedKeyWord2of3() :
 }
 {
     (
-        <ABSOLUTE>
-    |   <ADD>
-    |   <ALWAYS>
-    |   <ARRAY_CONCAT_AGG>
-    |   <ASSIGNMENT>
-    |   <BEFORE>
-    |   <C>
-    |   <CATALOG_NAME>
-    |   <CHARACTERISTICS>
-    |   <CHARACTER_SET_NAME>
-    |   <COBOL>
-    |   <COLLATION_NAME>
-    |   <COMMAND_FUNCTION>
-    |   <CONDITIONAL>
-    |   <CONNECTION_NAME>
-    |   <CONSTRAINTS>
-    |   <CONTINUE>
-    |   <DATABASE>
-    |   <DATETIME_DIFF>
-    |   <DATETIME_TRUNC>
-    |   <DAYS>
-    |   <DEFERRABLE>
-    |   <DEFINER>
-    |   <DERIVED>
-    |   <DESCRIPTOR>
-    |   <DOMAIN>
-    |   <DOT_FORMAT>
-    |   <ENCODING>
-    |   <EXCEPTION>
-    |   <FINAL>
-    |   <FORMAT>
-    |   <FRAC_SECOND>
-    |   <GENERATED>
-    |   <GOTO>
-    |   <HIERARCHY>
-    |   <IGNORE>
-    |   <IMMEDIATELY>
-    |   <INCLUDING>
-    |   <INPUT>
-    |   <INVOKER>
-    |   <ISOYEAR>
-    |   <K>
-    |   <KEY_TYPE>
-    |   <LENGTH>
-    |   <LOCATOR>
-    |   <MATCHED>
-    |   <MESSAGE_OCTET_LENGTH>
-    |   <MILLENNIUM>
-    |   <MINVALUE>
-    |   <MUMPS>
-    |   <NANOSECOND>
-    |   <NULLABLE>
-    |   <OBJECT>
-    |   <OPTIONS>
-    |   <OTHERS>
-    |   <PAD>
-    |   <PARAMETER_ORDINAL_POSITION>
-    |   <PARAMETER_SPECIFIC_SCHEMA>
-    |   <PASSING>
-    |   <PATH>
-    |   <PIVOT>
-    |   <PLI>
-    |   <PRIOR>
-    |   <QUARTER>
-    |   <RELATIVE>
-    |   <RESPECT>
-    |   <RETURNED_CARDINALITY>
-    |   <RETURNED_SQLSTATE>
-    |   <ROLE>
-    |   <ROUTINE_NAME>
-    |   <SCALAR>
-    |   <SCHEMA_NAME>
-    |   <SCOPE_SCHEMA>
-    |   <SECURITY>
-    |   <SEQUENCE>
-    |   <SERVER_NAME>
-    |   <SIMPLE>
-    |   <SPACE>
-    |   <SQL_BINARY>
-    |   <SQL_BOOLEAN>
-    |   <SQL_DATE>
-    |   <SQL_FLOAT>
-    |   <SQL_INTERVAL_DAY_TO_HOUR>
-    |   <SQL_INTERVAL_HOUR>
-    |   <SQL_INTERVAL_MINUTE>
-    |   <SQL_INTERVAL_SECOND>
-    |   <SQL_LONGVARBINARY>
-    |   <SQL_NCHAR>
-    |   <SQL_NVARCHAR>
-    |   <SQL_TIME>
-    |   <SQL_TSI_DAY>
-    |   <SQL_TSI_MICROSECOND>
-    |   <SQL_TSI_QUARTER>
-    |   <SQL_TSI_YEAR>
-    |   <STATE>
-    |   <STRUCTURE>
-    |   <SUBSTITUTE>
-    |   <TIES>
-    |   <TIMESTAMPADD>
-    |   <TIMESTAMP_TRUNC>
-    |   <TRANSACTIONS_ACTIVE>
-    |   <TRANSFORM>
-    |   <TRIGGER_NAME>
-    |   <TYPE>
-    |   <UNCONDITIONAL>
-    |   <UNNAMED>
-    |   <USER_DEFINED_TYPE_CODE>
-    |   <UTF16>
-    |   <VERSION>
-    |   <WEEKS>
-    |   <WRITE>
-    |   <ZONE>
+<#list (parser.nonReservedKeywords!default.parser.nonReservedKeywords) + (parser.nonReservedKeywordsToAdd!default.parser.nonReservedKeywordsToAdd) as keyword>
+<#if keyword?index == 2>
+        <${keyword}>
+<#elseif keyword?index % 3 == 2>
+    |   <${keyword}>
+</#if>
+</#list>
     )
 }
 
@@ -8826,12 +8686,16 @@ void NonReservedKeyWord2of3() :
 {
     < LPAREN: "(">
 |   < RPAREN: ")">
+<#if (parser.includeBraces!default.parser.includeBraces) >
 |   < LBRACE_D: "{" (" ")* ["d","D"] >
 |   < LBRACE_T: "{" (" ")* ["t","T"] >
 |   < LBRACE_TS: "{" (" ")* ["t","T"] ["s","S"] >
 |   < LBRACE_FN: "{" (" ")* ["f","F"] ["n","N"] >
 |   < LBRACE: "{" >
 |   < RBRACE: "}" >
+<#else>
+<#include "/@includes/braces.ftl" />
+</#if>
 |   < LBRACKET: "[" >
 |   < RBRACKET: "]" >
 |   < SEMICOLON: ";" >
@@ -8865,6 +8729,9 @@ void NonReservedKeyWord2of3() :
 |   < VERTICAL_BAR: "|" >
 |   < CARET: "^" >
 |   < DOLLAR: "$" >
+<#list (parser.binaryOperatorsTokens!default.parser.binaryOperatorsTokens) as operator>
+|   ${operator}
+</#list>
 }
 
 
@@ -8896,6 +8763,9 @@ TOKEN_MGR_DECLS : {
       }
     }
 
+<#if (parser.includeAdditionalDeclarations!default.parser.includeAdditionalDeclarations)>
+  <#include "/@includes/tokenManagerDeclarations.ftl" />
+</#if>
 }
 
 /*
@@ -9046,7 +8916,11 @@ MORE :
 
 <DEFAULT, DQID, BTID, BQID> TOKEN :
 {
+    <#if parser.customIdentifierToken?has_content>
+        ${parser.customIdentifierToken}
+    <#else>
         < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+    </#if>
 }
 
 <DEFAULT, DQID, BTID, BQID, BQHID> TOKEN :

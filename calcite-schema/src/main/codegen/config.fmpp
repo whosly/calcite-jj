@@ -47,9 +47,8 @@ data: {
     # implementations for parsing custom SQL statements, literals or types
     # given as part of "statementParserMethods", "literalParserMethods" or
     # "dataTypeParserMethods".
-    # Example: "parserImpls.ftl".
     implementationFiles: [
-        "parserImpls.ftl"
+      "parserImpls.ftl"
     ]
 
     # List of additional classes and packages to import.

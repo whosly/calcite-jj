@@ -10,7 +10,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>new-grammar</artifactId>
+    <artifactId>05-new-grammar</artifactId>
     <name>05-new-grammar</name>
 
     <build>

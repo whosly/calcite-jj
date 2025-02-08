@@ -41,7 +41,7 @@ data: {
   parser: {
     # Generated parser implementation package and class name.
     package: "org.apache.calcite.sql.parser.impl",
-    class: "JackySqlParserImpl",
+    class: "SqlParserImpl",
 
     # List of files in @includes directory that have parser method
     # implementations for parsing custom SQL statements, literals or types

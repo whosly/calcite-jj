@@ -9,7 +9,7 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>calcite-schema</artifactId>
+	<artifactId>06-calcite-schema</artifactId>
 	<name>06-calcite-schema</name>
 	<description>calcite-schema 多种数据源加载</description>
 

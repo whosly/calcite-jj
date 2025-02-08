@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>parser-jj-generator</artifactId>
+    <artifactId>02-parser-jj-generator</artifactId>
     <name>02-parser-jj-generator</name>
     <description>根据 parser-jj 模板生成 parser-jj</description>
 

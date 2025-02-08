@@ -10,7 +10,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>auto-generator</artifactId>
+    <artifactId>04-auto-generator</artifactId>
     <name>04-auto-generator</name>
     <description>
         根据 parser-jj 模板生成 Parser Java代码。
