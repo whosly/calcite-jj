@@ -14,6 +14,10 @@
     <name>03-parser-generator</name>
     <description>根据 parser-jj 代码文件生成 Parser Java代码</description>
 
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+    
     <build>
         <plugins>
             <plugin>

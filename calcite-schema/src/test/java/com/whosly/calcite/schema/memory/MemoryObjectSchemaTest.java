@@ -38,7 +38,7 @@ public class MemoryObjectSchemaTest {
         // 以实现查询不同数据源的目的
         SchemaPlus rootSchema = calciteConnection.getRootSchema();
 
-        // 4.将不同数据源schema挂载到RootSchema，这里添加CsvSchema
+        // 4.将不同数据源schema挂载到RootSchema
         rootSchema.add("hr", reflectiveSchema);
 
         this.connection = calciteConnection;

@@ -1,4 +1,4 @@
-# new-grammar
+# new-grammar:  新增语法 `CREATE MATERIALIZED VIEW`
 
 ## JavaCC 编译插件配置
 使用 FreeMarker 模版插件根据 config.fmpp 生成 parser.jj 文件，最后使用 JavaCC 编译插件生成最终的解析器代码。

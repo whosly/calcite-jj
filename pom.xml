@@ -24,6 +24,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <skipTests>false</skipTests>
 
+        <!-- Jul 26, 2023 -->
         <calcite.version>1.35.0</calcite.version>
 <!--        <calcite.version>1.36.0</calcite.version>-->
 <!--        <calcite.version>1.38.0</calcite.version>-->
@@ -42,16 +43,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- https://mvnrepository.com/artifact/org.apache.calcite/calcite-core -->
             <dependency>
                 <groupId>org.apache.calcite</groupId>
                 <artifactId>calcite-core</artifactId>
-                <version>${calcite.version}</version>
-<!--                <exclusions>-->
-<!--                    <exclusion>-->
-<!--                        <groupId>com.google.guava</groupId>-->
-<!--                        <artifactId>guava</artifactId>-->
-<!--                    </exclusion>-->
-<!--                </exclusions>-->
+                <version>1.35.0</version>
+<!--                <version>${calcite.version}</version>-->
             </dependency>
             <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
             <dependency>

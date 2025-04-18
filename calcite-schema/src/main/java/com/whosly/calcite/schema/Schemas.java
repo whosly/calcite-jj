@@ -18,11 +18,18 @@ public class Schemas {
     }
 
     public static Connection getConnection(Map<String, Schema> regSchema) throws SQLException {
+        try {
+            Class.forName("org.apache.calcite.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
         // 2.构建Connection
         // 2.1 设置连接参数
         Properties info = new Properties();
         // 不区分sql大小写
         info.setProperty("caseSensitive", "false");
+        info.setProperty("lex", "JAVA");
 
         // 2.2 获取标准的JDBC Connection
         Connection connection = DriverManager.getConnection("jdbc:calcite:", info);

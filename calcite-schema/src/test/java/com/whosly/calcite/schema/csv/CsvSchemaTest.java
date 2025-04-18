@@ -43,7 +43,9 @@ public class CsvSchemaTest {
         SchemaPlus rootSchema = calciteConnection.getRootSchema();
 
         // 4.将不同数据源schema挂载到RootSchema，这里添加CsvSchema
+        // load databaseName: csv
         rootSchema.add("csv", CsvSchemaLoader.loadSchema("csv"));
+        // load databaseName: bugfix
         rootSchema.add("bugfix", CsvSchemaLoader.loadSchema("bugfix"));
 
         this.connection = calciteConnection;

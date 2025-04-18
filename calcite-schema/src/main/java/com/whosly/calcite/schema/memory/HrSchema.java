@@ -3,7 +3,7 @@ package com.whosly.calcite.schema.memory;
 import com.whosly.calcite.schema.memory.table.Employee;
 
 /**
- * Database 定义
+ * 基于内存的Database 定义
  */
 public class HrSchema {
     public final Employee[] emps = {
