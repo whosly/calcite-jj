@@ -53,3 +53,43 @@ mysql 数据库作为数据源。 SchemaLoader为 [MysqlSchemaLoader](src/main/j
 
 测试用例 [SchemasTest](src/test/java/com/whosly/calcite/schema/SchemasTest.java#testMysqlLoadSchema)
 
+
+# 查找冲突依赖
+
+## 查找冲突依赖
+```shell
+mvn dependency:tree -Dverbose
+```
+
+## 分析某个组件的依赖
+如 分析 Spring Boot 的依赖
+```shell
+mvn dependency:tree -Dincludes=org.springframework*
+```
+
+## 检查测试依赖
+```shell
+mvn dependency:tree -Dscope=test
+```
+
+## 检查未使用的依赖或缺失的依赖
+```shell
+mvn dependency:analyze
+```
+
+## 如何解决依赖冲突？
+在 pom.xml 中通过 <exclusions> 排除冲突的传递性依赖：
+
+```
+<dependency>
+    <groupId>com.example</groupId>
+    <artifactId>example-lib</artifactId>
+    <version>1.0</version>
+    <exclusions>
+        <exclusion>
+            <groupId>conflict-group</groupId>
+            <artifactId>conflict-artifact</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+```

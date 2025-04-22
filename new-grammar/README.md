@@ -349,7 +349,7 @@ SqlNode SqlJacky() :
 # Example: "org.apache.calcite.sql.*", "java.util.List".
 imports: [
     "org.apache.calcite.sql.CreateMaterializedView",
-    "org.apache.calcite.sql.SqlJacky"
+    "org.apache.calcite.sql.SqlJackyJob"
 ]
 ```
 
@@ -389,7 +389,7 @@ package com.news.grammar;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.apache.calcite.sql.SqlJacky;
+import org.apache.calcite.sql.SqlJackyJob;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;

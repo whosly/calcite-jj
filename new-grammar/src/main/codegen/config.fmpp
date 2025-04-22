@@ -60,7 +60,8 @@ data: {
     # 导入处理的语句
     imports: [
         "org.apache.calcite.sql.CreateMaterializedView",
-        "org.apache.calcite.sql.SqlJacky"
+        "org.apache.calcite.sql.SqlJackyJob",
+        "org.apache.calcite.sql.SqlSubmit"
     ]
 
     # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
@@ -70,6 +71,7 @@ data: {
         "IF",
         "MATERIALIZED",
         "JACKY",
+        "SUBMIT",
         "JOB"
     ]
 
@@ -436,7 +438,8 @@ data: {
     # 用于解析自定义SQL语句的方法列表。
     statementParserMethods: [
         "SqlCreateMaterializedView()",
-        "SqlJacky()"
+        "SqlJackyJob()",
+        "SqlSubmit()"
     ]
 
     # List of methods for parsing custom literals.

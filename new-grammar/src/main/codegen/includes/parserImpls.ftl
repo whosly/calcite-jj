@@ -57,7 +57,7 @@ SqlNode SqlCreateMaterializedView() :
     }
 }
 
-SqlNode SqlJacky() :
+SqlNode SqlJackyJob() :
 {
     SqlNode stringNode;
 }
@@ -65,6 +65,18 @@ SqlNode SqlJacky() :
     <JACKY> <JOB>
     stringNode = StringLiteral()
     {
-        return new SqlJacky(getPos(), token.image);
+        return new SqlJackyJob(getPos(), token.image);
+    }
+}
+
+SqlNode SqlSubmit() :
+{
+    SqlNode jobString;
+}
+{
+    <SUBMIT> <JOB> <AS>
+    jobString = StringLiteral()
+    {
+        return new SqlSubmit(getPos(), token.image);
     }
 }

@@ -2,7 +2,7 @@ package com.news.grammar;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.apache.calcite.sql.SqlJacky;
+import org.apache.calcite.sql.SqlJackyJob;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -15,6 +15,9 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
+/**
+ * 新实现语法的测试用例： JACKY JOB query
+ */
 public class JackyJobTest {
 
     private FrameworkConfig frameworkConfig;
@@ -43,7 +46,7 @@ public class JackyJobTest {
         SqlNode sqlNode = parser.parseQuery();
 
         System.out.println(sqlNode);
-        assertTrue(sqlNode instanceof SqlJacky);
+        assertTrue(sqlNode instanceof SqlJackyJob);
     }
 
 }

@@ -32,16 +32,3 @@
     }
   }
 -->
-
-
-SqlNode SqlSubmit() :
-{
-    SqlNode jobString;
-}
-{
-    <SUBMIT> <JOB> <AS>
-    jobString = StringLiteral()
-    {
-        return new SqlSubmit(getPos(), token.image);
-    }
-}

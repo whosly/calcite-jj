@@ -15,6 +15,13 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
+/**
+ * 新实现语法的测试用例：
+ *
+ * CREATE MATERIALIZED VIEW
+ * [ IF NOT EXISTS ] view_name
+ * AS query
+ */
 public class CreateMaterializedViewTest {
 
     private FrameworkConfig frameworkConfig;

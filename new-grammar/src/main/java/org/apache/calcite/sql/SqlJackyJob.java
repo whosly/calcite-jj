@@ -11,11 +11,11 @@ import org.apache.calcite.util.Litmus;
  *
  * JACKY JOB query
  */
-public class SqlJacky extends SqlNode {
+public class SqlJackyJob extends SqlNode {
     private String jackyString;
     private SqlParserPos pos;
 
-    public  SqlJacky(SqlParserPos pos, String jackyString){
+    public SqlJackyJob(SqlParserPos pos, String jackyString){
         super(pos);
         this.pos = pos;
         this.jackyString = jackyString;

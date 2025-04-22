@@ -12,6 +12,9 @@ import org.apache.calcite.tools.Frameworks;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * 常规语法
+ */
 public class NormalGramTest {
 
     private FrameworkConfig frameworkConfig;

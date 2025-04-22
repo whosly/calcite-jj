@@ -1,14 +1,14 @@
-package com.whosly.calcite.sql.parser;
+package com.news.grammar;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.impl.JackySqlParserImpl;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.sql.parser.impl.JackySqlParserImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

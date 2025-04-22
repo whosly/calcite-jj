@@ -1,26 +1,28 @@
 package com.whosly.calcite;
 
-import org.junit.Test;
-import org.junit.Assert;
-import org.junit.runner.RunWith;
+import com.whosly.calcite.controller.HelloController;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@WebFluxTest(HelloController.class)
 public class CalciteApplicationTests {
 
 	@Autowired
-	private TestRestTemplate restTemplate;
+	private WebTestClient webTestClient;
 
 	@Test
-	public void testRest() {
-		R<String> rs = restTemplate.getForObject("/hello", R.class);
-		System.out.println(rs);
-
-		Assert.assertEquals("hello", rs.getData());
+	public void testHelloEndpoint() {
+		webTestClient.get().uri("/hello")
+				.accept(MediaType.APPLICATION_JSON)
+				.exchange()
+				.expectStatus().isOk()
+				.expectHeader().contentType(MediaType.APPLICATION_JSON)
+				.expectBody()
+				.jsonPath("$.code").isEqualTo(200)
+				.jsonPath("$.msg").isEqualTo("success")
+				.jsonPath("$.data").isEqualTo("hello");
 	}
-
 }

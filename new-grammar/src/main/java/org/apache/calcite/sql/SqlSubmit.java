@@ -1,13 +1,11 @@
 package org.apache.calcite.sql;
 
-import lombok.Getter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.util.Litmus;
 
-@Getter
 public class SqlSubmit extends SqlNode {
 
     String jobString;
@@ -15,6 +13,10 @@ public class SqlSubmit extends SqlNode {
     public SqlSubmit(SqlParserPos pos, String jobString) {
         super(pos);
         this.jobString = jobString;
+    }
+
+    public String getJobString() {
+        return jobString;
     }
 
     @Override
