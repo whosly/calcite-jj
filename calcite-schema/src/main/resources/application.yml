@@ -40,5 +40,12 @@ xss:
   # 需要处理的服务地址
   urlPatterns: /service/*,/tool/*
 
-logback:
-  logdir: logs/calcite
+logging:
+  file:
+    name: logs/calcite.log
+  logback:
+    rollingpolicy:
+      max-history: 7
+  level:
+    root: INFO
+    com.whosly.calcite.schema: DEBUG

@@ -10,15 +10,13 @@ import java.util.Arrays;
 
 @SpringBootApplication
 @ServletComponentScan
-public class CalciteApplication {
-	private static final Logger logger = LoggerFactory.getLogger(CalciteApplication.class);
+public class CalciteSchemaApplication {
+	private static final Logger logger = LoggerFactory.getLogger(CalciteSchemaApplication.class);
 
 	public static void main(String[] args) {
-		logger.info("Application started with args: {}", Arrays.toString(args));
-
 		new SpringApplicationBuilder()
-				.main(CalciteApplication.class)
-				.sources(CalciteApplication.class)
+				.main(CalciteSchemaApplication.class)
+				.sources(CalciteSchemaApplication.class)
 				.run(args);
 
 		System.out.println("(♥◠‿◠)ﾉﾞ  启动成功   ლ(´ڡ`ლ)ﾞ  \n" +
@@ -31,6 +29,8 @@ public class CalciteApplication {
 				" |  | \\ `'   /|   `-'  /           \n" +
 				" |  |  \\    /  \\      /           \n" +
 				" ''-'   `'-'    `-..-'              ");
+
+		logger.info("Application started with args: {}", Arrays.toString(args));
 	}
 
 }

@@ -58,3 +58,12 @@ copy至此项目中。
 多种数据源加载的示例。
 
 [README.md](./calcite-schema/README.md)
+
+# 编译
+```
+mvn clean initialize
+
+mvn package
+
+mvn clean install
+```
