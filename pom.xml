@@ -28,6 +28,7 @@
         <calcite.version>1.35.0</calcite.version>
 <!--        <calcite.version>1.36.0</calcite.version>-->
 <!--        <calcite.version>1.38.0</calcite.version>-->
+        <avatica.version>1.26.0</avatica.version>
     </properties>
 
     <modules>
@@ -38,10 +39,27 @@
         <module>new-grammar</module>
         <module>calcite-schema</module>
         <module>calcite-rule</module>
+        <module>avacita</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.apache.calcite.avatica</groupId>
+                <artifactId>avatica-core</artifactId>
+                <version>${avatica.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.calcite.avatica</groupId>
+                <artifactId>avatica</artifactId>
+                <version>${avatica.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.calcite.avatica</groupId>
+                <artifactId>avatica-server</artifactId>
+                <version>${avatica.version}</version>
+            </dependency>
+
             <!-- https://mvnrepository.com/artifact/org.apache.calcite/calcite-core -->
             <dependency>
                 <groupId>org.apache.calcite</groupId>
@@ -62,6 +80,17 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <dependency>
+                <groupId>org.apache.calcite</groupId>
+                <artifactId>calcite-server</artifactId>
+                <version>${calcite.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.calcite</groupId>
+                <artifactId>calcite-druid</artifactId>
+                <version>${calcite.version}</version>
+            </dependency>
+
             <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
             <dependency>
                 <groupId>com.google.guava</groupId>
