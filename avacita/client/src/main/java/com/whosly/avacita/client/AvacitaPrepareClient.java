@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public class AvacitaClient {
+public class AvacitaPrepareClient {
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
         System.out.println("AvacitaClient");
         Class.forName("com.whosly.avacita.driver.EncDriver");
@@ -14,28 +14,20 @@ public class AvacitaClient {
         prop.put("serialization", "protobuf");
 
         String url = "jdbc:enc:url=http://localhost:5888";
+        String sql = "SELECT * FROM t_emp WHERE id > ?";
 
-        // 首先看驱动存不存在，通过Class.forName反射判断；
-        // 如果存在Driver，尝试建立链接；
-        // 如果建立链接成功了，返回链接。
-        // Connection 是 AvaticaJDBC41Connection
         try (Connection conn = DriverManager.getConnection(url, prop)) {
-            // 调用AvaticaConnection.createStatement;
-            // 交给AvaticaJdbc41Factory创建AvaticaStatement；AvaticaStatement的构造函数会创建StatementHandle（发起远程请求得到响应）;
-            // 最后返回AvaticaStatement。
-            // 创建Statement, 就是发起远程请求，然后服务端创建Statement，然后把Statement id返回回来，然后就可以根据这个ID直接用
-            final Statement stmt = conn.createStatement();
+            // 使用显式参数类型指定（避免元数据查询）
+            final PreparedStatement pstmt = conn.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 
-            // AvaticaStatment调用connection.prepareAndExecuteInternal(this, sql, maxRowCount1);
-            // 然后调用RemoteMeta.prepareAndExecute;
-            // RemoteMeta内部由service发起远程请求，并得到响应。
-            // 服务端，收到请求后，首先根据statement id找到statement，然后通过statement执行请求，并返回结果。
-            final ResultSet rs = stmt.executeQuery("SELECT * FROM t_emp");
+            // 1. 设置参数（示例：查询 id > 2122 的记录）
+            pstmt.setInt(1, 2122);
+
+            final ResultSet rs = pstmt.executeQuery();
 
             printResult(rs);
 
             rs.close();
-            stmt.close();
         }
     }
 
@@ -44,7 +36,7 @@ public class AvacitaClient {
      * @param rs
      * @return rs是否存在数据。 true: 存在数据
      */
-    public static boolean printResult(ResultSet rs) throws SQLException {
+    private static boolean printResult(ResultSet rs) throws SQLException {
         if (rs == null) {
             return false;
         }

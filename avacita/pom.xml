@@ -13,8 +13,43 @@
     <packaging>pom</packaging>
 
     <modules>
+        <!-- 客户端 -->
         <module>client</module>
+        <!-- 服务端： 连接 -->
         <module>server-connect</module>
+        <!-- 服务端： SQL 识别 -->
+        <module>server-connect-syntax</module>
+        <!-- 服务端： 查询脱敏(rule) -->
+        <module>server-query-mask</module>
     </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- https://mvnrepository.com/artifact/com.mysql/mysql-connector-j -->
+            <dependency>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
+                <version>8.3.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
 </project>

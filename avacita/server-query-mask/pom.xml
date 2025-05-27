@@ -9,7 +9,8 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>server-connect</artifactId>
+    <artifactId>server-query-mask</artifactId>
+    <description>服务端： 查询脱敏(rule)</description>
 
     <dependencies>
         <dependency>

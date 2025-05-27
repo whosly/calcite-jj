@@ -28,7 +28,10 @@
         <calcite.version>1.35.0</calcite.version>
 <!--        <calcite.version>1.36.0</calcite.version>-->
 <!--        <calcite.version>1.38.0</calcite.version>-->
+        <!-- 该版本的 avatica 1.26.0 与 httpclient5、httpcore5、jetty(9.4.56.v20240826) 适配  -->
         <avatica.version>1.26.0</avatica.version>
+        <httpclient5.version>5.4.1</httpclient5.version>
+        <httpcore5.version>5.3.1</httpcore5.version>
     </properties>
 
     <modules>
@@ -47,11 +50,6 @@
             <dependency>
                 <groupId>org.apache.calcite.avatica</groupId>
                 <artifactId>avatica-core</artifactId>
-                <version>${avatica.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.calcite.avatica</groupId>
-                <artifactId>avatica</artifactId>
                 <version>${avatica.version}</version>
             </dependency>
             <dependency>

@@ -9,7 +9,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>server-connect</artifactId>
+    <artifactId>server-connect-syntax</artifactId>
 
     <dependencies>
         <dependency>
