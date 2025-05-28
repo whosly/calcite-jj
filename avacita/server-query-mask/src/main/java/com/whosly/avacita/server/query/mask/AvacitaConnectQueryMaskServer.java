@@ -3,6 +3,7 @@ package com.whosly.avacita.server.query.mask;
 import java.sql.SQLException;
 import java.util.Properties;
 
+import com.whosly.avacita.server.query.mask.mysql.MaskingJdbcMeta;
 import org.apache.calcite.avatica.jdbc.JdbcMeta;
 import org.apache.calcite.avatica.remote.Driver;
 import org.apache.calcite.avatica.remote.LocalService;
@@ -35,7 +36,7 @@ public class AvacitaConnectQueryMaskServer {
         props.setProperty("password", DB_PASSWORD);
 
         // 创建带有SQL拦截功能的Meta实现
-        final JdbcMeta meta = new AutoHintsJdbcMeta(DB_URL, props);
+        final JdbcMeta meta = new MaskingJdbcMeta(DB_URL, props);
         final LocalService service = new LocalService(meta);
 
         final HttpServer server = new HttpServer.Builder<>()

@@ -1,15 +1,13 @@
-package com.whosly.calcite.schema.mysql;
+package com.whosly.com.whosly.calcite.schema.mysql;
 
-import com.whosly.calcite.schema.ISchemaLoader;
 import org.apache.calcite.adapter.jdbc.JdbcSchema;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
-import org.thymeleaf.util.StringUtils;
 
 import javax.sql.DataSource;
 import java.util.Properties;
 
-public class MysqlSchemaLoader implements ISchemaLoader {
+public class MysqlSchemaLoader {
 
     /**
      * 添加MySQL数据源
@@ -26,7 +24,8 @@ public class MysqlSchemaLoader implements ISchemaLoader {
      */
     public static Schema loadSchema(SchemaPlus rootSchema, String hostname, String db, int port, String username, String password) {
         try {
-            Class.forName("com.mysql.jdbc.Driver");
+            Class.forName("com.mysql.cj.jdbc.Driver");
+//            Class.forName("com.mysql.jdbc.Driver");
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
