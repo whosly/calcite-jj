@@ -21,6 +21,7 @@
         <module>server-connect-syntax</module>
         <!-- 服务端： 查询脱敏(rule) -->
         <module>server-query-mask</module>
+        <module>server-all-enc</module>
     </modules>
 
     <dependencyManagement>
