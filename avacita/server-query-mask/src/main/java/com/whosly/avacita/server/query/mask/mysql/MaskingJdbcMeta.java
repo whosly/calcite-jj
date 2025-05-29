@@ -1,6 +1,8 @@
 package com.whosly.avacita.server.query.mask.mysql;
 
 import com.whosly.avacita.server.query.mask.ResultSetMeta;
+import com.whosly.avacita.server.query.mask.rule.MaskingResultSet;
+import com.whosly.avacita.server.query.mask.rule.MaskingResultSetMetaData;
 import com.whosly.avacita.server.query.mask.rule.MaskingRule;
 import com.whosly.avacita.server.query.mask.util.ValueMaskingStrategy;
 import com.whosly.calcite.schema.Schemas;
@@ -155,6 +157,29 @@ public class MaskingJdbcMeta extends JdbcMeta {
                 getCurrentColumnList(statementInfo, executeResult);
 
                 LOG.info("prepareAndExecute ResultSetMeta :{}。", this.currentResultSetMeta);
+            }
+
+            // 替换为自定义ResultSet
+            if (executeResult.resultSets != null && !executeResult.resultSets.isEmpty()) {
+                for (MetaResultSet queryResult : executeResult.resultSets) {
+                    if (queryResult.updateCount == -1 && queryResult.signature != null) {
+                        // 使用Signature对象创建自定义的MetaData
+                        ResultSetMetaData metaData = new MaskingResultSetMetaData(
+                                queryResult.signature, getMaskingFunctions()
+                        );
+
+                        // 创建一个包装了原始结果集的MaskingResultSet
+                        // 注意：这里需要从其他地方获取真正的ResultSet对象
+                        // 假设executeResult提供了获取原始ResultSet的方法
+                        ResultSet originalResultSet = getOriginalResultSet(queryResult);
+
+                        if (originalResultSet != null) {
+                            queryResult.resultSet = new MaskingResultSet(
+                                    originalResultSet, metaData, getMaskingFunctions()
+                            );
+                        }
+                    }
+                }
             }
 
             return executeResult;
