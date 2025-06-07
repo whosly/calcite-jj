@@ -1,6 +1,6 @@
 package com.whosly.avacita.server.query.mask.mysql;
 
-import com.whosly.avacita.server.query.mask.rule.MaskingRule;
+import com.whosly.avacita.server.query.mask.rule.MaskingRuleConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +18,11 @@ import java.util.concurrent.TimeUnit;
 public class MaskingConfigMeta {
     private static final Logger LOG = LoggerFactory.getLogger(MaskingConfigMeta.class);
     private final String configPath;
-    private final Map<String, List<MaskingRule>> maskingRules = new ConcurrentHashMap<>();
+    private final Map<String, List<MaskingRuleConfig>> maskingRules = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    private long lastLoadTime = 0L;
+    
     public MaskingConfigMeta(String configPath) {
         this.configPath = configPath;
 
@@ -54,7 +56,7 @@ public class MaskingConfigMeta {
                     String ruleType = parts[3];
                     String[] ruleParams = Arrays.copyOfRange(parts, 4, parts.length);
 
-                    MaskingRule rule = new MaskingRule(
+                    MaskingRuleConfig rule = new MaskingRuleConfig(
                             schema, table, column, ruleType, ruleParams
                     );
 
@@ -81,28 +83,48 @@ public class MaskingConfigMeta {
         }
     }
 
+    // 新增热加载检测
+    private void startWatching() {
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                File configFile = new File(getClass().getClassLoader().getResource(configPath).getFile());
+                long lastModified = configFile.lastModified();
+                if (lastModified > this.lastLoadTime) {
+                    loadConfig();
+                    this.lastLoadTime = System.currentTimeMillis();
+                }
+            } catch (Exception e) {
+                LOG.error("配置文件监控异常", e);
+            }
+        }, 5, 5, TimeUnit.SECONDS);
+    }
+
+    // 新增按列名匹配规则
+    public MaskingRuleConfig getMatchingRule(String schema, String table, String column) {
+        return maskingRules.values().stream()
+            .flatMap(List::stream)
+            .filter(rule -> rule.match(schema, table, column))
+            .findFirst()
+            .orElse(null);
+    }
+
     // 根据表名和字段名查找脱敏规则
-    public List<MaskingRule> getRule(String schema, String table) {
+    public List<MaskingRuleConfig> getRule(String schema, String table) {
         String key = schema + "." + table;
-        List<MaskingRule> tableRules = maskingRules.getOrDefault(key, Collections.emptyList());
+        List<MaskingRuleConfig> tableRules = maskingRules.getOrDefault(key, Collections.emptyList());
         return tableRules;
     }
 
     // 根据表名和字段名查找脱敏规则
-    public MaskingRule getRule(String schema, String table, String column) {
+    public MaskingRuleConfig getRule(String schema, String table, String column) {
         String key = schema + "." + table;
-        List<MaskingRule> tableRules = maskingRules.getOrDefault(key, Collections.emptyList());
+        List<MaskingRuleConfig> tableRules = maskingRules.getOrDefault(key, Collections.emptyList());
 
-        MaskingRule columnRole = tableRules.stream()
+        MaskingRuleConfig columnRole = tableRules.stream()
                 .filter(r -> r.getColumn().equalsIgnoreCase(column))
                 .findFirst()
                 .orElse(null);
         return columnRole;
-    }
-
-    // 启动配置文件监控
-    private void startWatching() {
-        scheduler.scheduleAtFixedRate(this::loadConfig, 5, 5, TimeUnit.SECONDS);
     }
 
     // 关闭资源

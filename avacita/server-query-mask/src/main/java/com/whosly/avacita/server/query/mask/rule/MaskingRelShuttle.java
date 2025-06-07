@@ -42,7 +42,7 @@ public class MaskingRelShuttle extends RexShuttle {
     public RexNode visitInputRef(RexInputRef inputRef) {
         RelDataType fieldType = inputRef.getType();
         String columnName = getColumnName(inputRef);
-        MaskingRule rule = configManager.getRule(schemaName, tableName, columnName);
+        MaskingRuleConfig rule = configManager.getRule(schemaName, tableName, columnName);
         if (rule != null) {
             return applyMaskingRule(rule, inputRef, fieldType);
         }
@@ -73,7 +73,7 @@ public class MaskingRelShuttle extends RexShuttle {
         return "COLUMN_" + inputRef.getIndex();
     }
 
-    private RexNode applyMaskingRule(MaskingRule rule, RexNode originalExpr, RelDataType fieldType) {
+    private RexNode applyMaskingRule(MaskingRuleConfig rule, RexNode originalExpr, RelDataType fieldType) {
         switch (rule.getRuleType().name().toUpperCase()) {
             case "MASK_FULL":
                 return createMaskValue(rexBuilder, fieldType);

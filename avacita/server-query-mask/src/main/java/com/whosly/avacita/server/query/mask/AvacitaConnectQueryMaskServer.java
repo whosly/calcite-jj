@@ -3,6 +3,7 @@ package com.whosly.avacita.server.query.mask;
 import java.sql.SQLException;
 import java.util.Properties;
 
+import com.whosly.avacita.server.query.mask.mysql.MaskingConfigMeta;
 import com.whosly.avacita.server.query.mask.mysql.MaskingJdbcMeta;
 import org.apache.calcite.avatica.jdbc.JdbcMeta;
 import org.apache.calcite.avatica.remote.Driver;
@@ -23,6 +24,9 @@ public class AvacitaConnectQueryMaskServer {
     private static final int PORT = 5888;
 
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
+        // 初始化脱敏配置（配置文件放在resources/mask/目录下）
+        MaskingConfigMeta maskingConfigMeta = new MaskingConfigMeta("mask/masking_rules.csv");
+
         // generateSimpleParameterMetadata=true   生成简单的参数元数据
         final String DB_URL = "jdbc:mysql://localhost:13307/demo?useUnicode=true&generateSimpleParameterMetadata=true";
         final String DB_USER = "root";
@@ -35,8 +39,8 @@ public class AvacitaConnectQueryMaskServer {
         props.setProperty("user", DB_USER);
         props.setProperty("password", DB_PASSWORD);
 
-        // 创建带有SQL拦截功能的Meta实现
-        final JdbcMeta meta = new MaskingJdbcMeta(DB_URL, props);
+        // 创建带脱敏功能的Meta实例
+        final JdbcMeta meta = new MaskingJdbcMeta(DB_URL, props, maskingConfigMeta);
         final LocalService service = new LocalService(meta);
 
         final HttpServer server = new HttpServer.Builder<>()

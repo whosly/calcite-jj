@@ -1,15 +1,18 @@
 package com.whosly.avacita.server.query.mask.mysql;
 
 import com.whosly.avacita.server.query.mask.ResultSetMeta;
+import com.whosly.avacita.server.query.mask.rule.MaskingCursor;
 import com.whosly.avacita.server.query.mask.rule.MaskingResultSet;
 import com.whosly.avacita.server.query.mask.rule.MaskingResultSetMetaData;
-import com.whosly.avacita.server.query.mask.rule.MaskingRule;
+import com.whosly.avacita.server.query.mask.rule.MaskingRuleConfig;
 import com.whosly.avacita.server.query.mask.util.ValueMaskingStrategy;
 import com.whosly.calcite.schema.Schemas;
 import com.whosly.com.whosly.calcite.schema.mysql.MysqlSchemaLoader;
 import org.apache.calcite.avatica.*;
 import org.apache.calcite.avatica.jdbc.JdbcMeta;
 import org.apache.calcite.avatica.jdbc.StatementInfo;
+import org.apache.calcite.avatica.remote.TypedValue;
+import org.apache.calcite.avatica.util.Cursor;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.rel.type.RelDataType;
@@ -41,21 +44,21 @@ public class MaskingJdbcMeta extends JdbcMeta {
      */
     private final SchemaPlus rootSchema = Frameworks.createRootSchema(true);
 
-    public MaskingJdbcMeta(String url) throws SQLException {
+    public MaskingJdbcMeta(String url, MaskingConfigMeta maskingConfigMeta) throws SQLException {
         super(url);
+        this.maskingConfigMeta = maskingConfigMeta;
 
         init();
     }
 
-    public MaskingJdbcMeta(String url, Properties info) throws SQLException {
+    public MaskingJdbcMeta(String url, Properties info, MaskingConfigMeta maskingConfigMeta) throws SQLException {
         super(url, info);
+        this.maskingConfigMeta = maskingConfigMeta;
 
         init();
     }
 
     private void init() {
-        this.maskingConfigMeta = new MaskingConfigMeta("mask/masking_rules.csv");
-
         // 创建支持 MySQL 语法的解析器配置
         this.parserConfig = SqlParser.configBuilder()
                 .setLex(Lex.MYSQL)                  // 设置词法分析器为 MySQL 模式
@@ -123,22 +126,59 @@ public class MaskingJdbcMeta extends JdbcMeta {
      * INSERT、DELETE、UPDATE、SELECT
      */
     @Override
-    public Meta.ExecuteResult prepareAndExecute(Meta.StatementHandle h, String sql, long maxRowCount,
+    public Meta.ExecuteResult prepareAndExecute(Meta.StatementHandle sh, String sql, long maxRowCount,
                                                 Meta.PrepareCallback callback) throws NoSuchStatementException {
 
-        try {
-//            Connection conn = getConnection(h.connectionId);
+//        try {
+//            String rewriteSql = rewriteSql(sql);
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
 
-            String rewriteSql = rewriteSql(sql);
+        // 获取原始结果
+        Meta.ExecuteResult result = super.prepareAndExecute(sh, sql, maxRowCount, callback);
 
-            ExecuteResult executeResult = super.prepareAndExecute(h, rewriteSql, maxRowCount, callback);
+        List<MetaResultSet> maskedResults = new ArrayList<>();
+        for (MetaResultSet metaRs : result.resultSets) {
+            // 仅处理查询结果集（updateCount == -1 表示查询）
+            if (metaRs.updateCount == -1 && metaRs.signature != null) {
+                // 创建列脱敏规则映射
+                Map<Integer, MaskingRuleConfig> columnRules = new HashMap<>();
+                List<ColumnMetaData> columns = metaRs.signature.columns;
 
-            return executeResult;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+                for (int i = 0; i < columns.size(); i++) {
+                    ColumnMetaData col = columns.get(i);
+                    columnRules.put(i + 1, maskingConfigMeta.getMatchingRule(
+                            col.schemaName,
+                            col.tableName,
+                            col.columnName
+                    ));
+                }
+
+                // 创建脱敏后的结果集
+                maskedResults.add(MetaResultSet.create(
+                        sh.connectionId,
+                        sh.id,
+                        true,
+                        metaRs.signature,
+                        new MaskingCursor(
+                                CursorFactory.record(
+                                        Object[].class,
+                                        null,
+                                        metaRs.signature.columns.stream()
+                                                .map(col -> col.columnName)
+                                                .collect(java.util.stream.Collectors.toList())
+                                ).createCursor(sh), // 创建基础Cursor
+                                columnRules
+                        ).toFrame()
+                ));
+            } else {
+                // 保持非查询结果不变
+                maskedResults.add(metaRs);
+            }
         }
+
+        return new Meta.ExecuteResult(maskedResults);
     }
 
     /**
@@ -203,6 +243,27 @@ public class MaskingJdbcMeta extends JdbcMeta {
         return desensitizeFrame(originalFrame, signature);
     }
 
+    private Meta.CursorFactory decorateCursorFactory(Meta.CursorFactory factory,
+                                                     Map<Integer, MaskingRuleConfig> rules) {
+
+        return new Meta.CursorFactory(
+                factory.style,
+                factory.clazz,
+                factory.fields,
+                factory.fieldNames
+        ) {
+            // 重写实际创建Cursor的方法（根据Avatica源码确认方法签名）
+            @Override
+            public Cursor createCursor(SchemaPlus schema, Meta.StatementHandle handle,
+                                       List<TypedValue> parameters, Frame firstFrame) {
+                return new MaskingCursor(
+                        super.createCursor(schema, handle, parameters, firstFrame),
+                        rules
+                );
+            }
+        };
+    }
+
     /**
      * 安全的脱敏处理
      */
@@ -240,13 +301,13 @@ public class MaskingJdbcMeta extends JdbcMeta {
 
     private Object applyMask(Object value, String schema, String table, String column) {
         // 查询脱敏规则并应用
-        MaskingRule columnRole = maskingConfigMeta.getRule(schema, table, column);
+        MaskingRuleConfig columnRole = maskingConfigMeta.getMatchingRule(schema, table, column);
 
         if(columnRole == null) {
             return value;
         }
 
-        return ValueMaskingStrategy.mask(value, columnRole.getRuleType());
+        return ValueMaskingStrategy.mask(value, columnRole);
     }
 
     private ResultSetMeta getCurrentColumnList(StatementInfo statementInfo, ExecuteResult executeResult) {
@@ -311,10 +372,12 @@ public class MaskingJdbcMeta extends JdbcMeta {
             return sql;
         }
 
-        String rewriteSql = sql;
-        LOG.debug("改写后 SQL: {}", rewriteSql);
+        String rewriteSql = "/*+ A */ " + sql;
 
-        return "/*+ A */ " + rewriteSql;
+        LOG.debug("改写后 SQL: {}", rewriteSql);
+        System.out.println("[MaskingJdbcMeta] \noriginalSql SQL:" + sql + "\nModified SQL: " + rewriteSql);
+
+        return rewriteSql;
     }
 
 }

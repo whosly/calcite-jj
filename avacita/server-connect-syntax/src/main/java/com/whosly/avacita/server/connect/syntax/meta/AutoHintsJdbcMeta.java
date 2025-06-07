@@ -81,8 +81,8 @@ public class AutoHintsJdbcMeta extends JdbcMeta {
     private String rewriteSql(String originalSql) {
         // 修改SQL：添加HINT
         String modifiedSql = "/*+ CALCITE_OPTIMIZER */ " + originalSql;
-        System.out.println("[AutoHintsJdbcMeta] Modified SQL: " + modifiedSql);
 
+        System.out.println("[AutoHintsJdbcMeta] \noriginalSql SQL:" + originalSql + "\nModified SQL: " + modifiedSql);
         return modifiedSql;
     }
 }

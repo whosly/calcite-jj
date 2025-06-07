@@ -3,14 +3,14 @@ package com.whosly.avacita.server.query.mask.rule;
 import lombok.ToString;
 
 @ToString
-public class MaskingRule {
+public class MaskingRuleConfig {
     private final String schema;
     private final String table;
     private final String column;
     private final MaskingRuleType ruleType;
     private final String[] ruleParams;
 
-    public MaskingRule(String schema, String table, String column, String ruleType, String[] ruleParams) {
+    public MaskingRuleConfig(String schema, String table, String column, String ruleType, String[] ruleParams) {
         this.schema = schema;
         this.table = table;
         this.column = column;
@@ -24,6 +24,13 @@ public class MaskingRule {
     public String getColumn() { return column; }
     public MaskingRuleType getRuleType() { return ruleType; }
     public String[] getRuleParams() { return ruleParams; }
+
+    public boolean match(String schema, String table, String column) {
+        return this.schema.equalsIgnoreCase(schema)
+                && this.table.equalsIgnoreCase(table)
+                && this.column.equalsIgnoreCase(column);
+    }
+
 //
 //    // 应用脱敏规则到 SQL 表达式
 //    public RexNode apply(RexBuilder rexBuilder, RexNode originalExpr, RelDataType fieldType) {
