@@ -30,7 +30,7 @@ public class AvacitaClient {
             // 然后调用RemoteMeta.prepareAndExecute;
             // RemoteMeta内部由service发起远程请求，并得到响应。
             // 服务端，收到请求后，首先根据statement id找到statement，然后通过statement执行请求，并返回结果。
-            final ResultSet rs = stmt.executeQuery("SELECT * FROM t_emp");
+//            final ResultSet rs = stmt.executeQuery("SELECT * FROM t_emp");
 //            final ResultSet rs = stmt.executeQuery("SELECT tel FROM t_emp");
 //            final ResultSet rs = stmt.executeQuery("SELECT tel, email FROM t_emp");
 //            final ResultSet rs = stmt.executeQuery("SELECT name, tel, email FROM t_emp");
@@ -38,7 +38,7 @@ public class AvacitaClient {
 //            final ResultSet rs = stmt.executeQuery("SELECT id, name, tel, cert_no, email, address FROM t_emp");
 //            final ResultSet rs = stmt.executeQuery("SELECT t.id, t.tel FROM (SELECT id FROM t_emp where id % 2 = 0) tmp, t_emp t where t.id = tmp.id");
 //            final ResultSet rs = stmt.executeQuery("SELECT t.id, t.tel FROM (SELECT id, cert_no, email FROM t_emp where id % 2 = 0) tmp, t_emp t where t.id = tmp.id");
-//            final ResultSet rs = stmt.executeQuery("SELECT tmp.*, t.* FROM (SELECT id, cert_no, email FROM t_emp where id % 2 = 0) tmp, t_emp t where t.id = tmp.id");
+            final ResultSet rs = stmt.executeQuery("SELECT tmp.*, t.* FROM (SELECT id, cert_no, email FROM t_emp where id % 2 = 0) tmp, t_emp t where t.id = tmp.id");
 //            final ResultSet rs = stmt.executeQuery("SELECT name, tel, email FROM t_emp limit 20");
 //            final ResultSet rs = stmt.executeQuery("show databases");
 //            final ResultSet rs = stmt.executeQuery("SHOW TABLES");

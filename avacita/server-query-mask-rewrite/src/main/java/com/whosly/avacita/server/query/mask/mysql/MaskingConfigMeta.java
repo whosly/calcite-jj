@@ -22,7 +22,7 @@ public class MaskingConfigMeta {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private long lastLoadTime = 0L;
-    
+
     public MaskingConfigMeta(String configPath) {
         this.configPath = configPath;
 
@@ -48,22 +48,36 @@ public class MaskingConfigMeta {
                     isHeader = false;
                     continue;
                 }
+                // 跳过空行
+                if (line.trim().isEmpty()) continue;
+
                 String[] parts = line.split(",");
-                if (parts.length >= 6 && Boolean.parseBoolean(parts[5])) {
-                    String schema = parts[0];
-                    String table = parts[1];
-                    String column = parts[2];
-                    String ruleType = parts[3];
-                    String[] ruleParams = Arrays.copyOfRange(parts, 4, parts.length);
+                if (parts.length < 6) continue;
 
-                    MaskingRuleConfig rule = new MaskingRuleConfig(
-                            schema, table, column, ruleType, ruleParams
-                    );
+                String schema = parts[0];
+                String table = parts[1];
+                String column = parts[2];
+                String ruleType = parts[3];
+                String enabledStr = parts[parts.length - 1];
+                boolean enabled = Boolean.parseBoolean(enabledStr.trim());
+                if (!enabled) continue;
 
-                    String key = schema + "." + table;
-                    // 使用 computeIfAbsent 初始化列表，但直接添加规则（不检查是否存在）
-                    maskingRules.computeIfAbsent(key, k -> new ArrayList<>()).add(rule);
+                // rule_params: parts[4] 到 parts[length-2]
+                String[] ruleParams;
+                if (parts.length > 6) {
+                    ruleParams = Arrays.copyOfRange(parts, 4, parts.length - 1);
+                } else if (parts.length == 6 && !StringUtils.isBlank(parts[4])) {
+                    ruleParams = new String[]{parts[4]};
+                } else {
+                    ruleParams = new String[0];
                 }
+
+                MaskingRuleConfig rule = new MaskingRuleConfig(
+                        schema, table, column, ruleType, ruleParams
+                );
+
+                String key = schema + "." + table;
+                maskingRules.computeIfAbsent(key, k -> new ArrayList<>()).add(rule);
             }
 
             LOG.trace("成功加载脱敏配置: {}，规则数量: {}， 规则：{}。",
@@ -99,29 +113,19 @@ public class MaskingConfigMeta {
         }, 5, 5, TimeUnit.SECONDS);
     }
 
-    public String getMaskFunc(String table, String column) {
-        MaskingRuleConfig rule = getRule(null, table, column);
-        if (rule != null) {
-            // 假设你有一个方法可以从 ruleType 推导出函数名, 返回希望包裹的脱敏函数名。脱敏函数需在数据库端实现（如 MySQL UDF）。
-            return rule.getRuleType().name().toLowerCase() + "_mask";
-        }
-        return null;
-    }
-
-    // 新增按列名匹配规则
+    // 按列名匹配规则
     public MaskingRuleConfig getMatchingRule(String schema, String table, String column) {
         return maskingRules.values().stream()
-            .flatMap(List::stream)
-            .filter(rule -> rule.match(schema, table, column))
-            .findFirst()
-            .orElse(null);
+                .flatMap(List::stream)
+                .filter(rule -> rule.match(schema, table, column))
+                .findFirst()
+                .orElse(null);
     }
 
     // 根据表名和字段名查找脱敏规则
     public List<MaskingRuleConfig> getRule(String schema, String table) {
         String key = schema + "." + table;
-        List<MaskingRuleConfig> tableRules = maskingRules.getOrDefault(key, Collections.emptyList());
-        return tableRules;
+        return maskingRules.getOrDefault(key, Collections.emptyList());
     }
 
     // 根据表名和字段名查找脱敏规则
@@ -129,11 +133,10 @@ public class MaskingConfigMeta {
         String key = schema + "." + table;
         List<MaskingRuleConfig> tableRules = maskingRules.getOrDefault(key, Collections.emptyList());
 
-        MaskingRuleConfig columnRole = tableRules.stream()
+        return tableRules.stream()
                 .filter(r -> r.getColumn().equalsIgnoreCase(column))
                 .findFirst()
                 .orElse(null);
-        return columnRole;
     }
 
     // 关闭资源

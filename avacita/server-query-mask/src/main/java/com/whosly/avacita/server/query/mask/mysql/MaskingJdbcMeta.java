@@ -108,8 +108,19 @@ public class MaskingJdbcMeta extends JdbcMeta {
 
     // ====================== SQL 执行 ======================
     @Override
+    public Meta.StatementHandle prepare(ConnectionHandle ch, String sql, long maxRowCount) {
+        LOG.info("服务端 prepare 被调用: {}", sql);
+
+        // 如果客户端用 prepare + execute 分步调用，可能只在 execute 时才走重写
+        // 另外， 如果 prepare 阶段返回了 signature，execute 阶段只用 signature id，不再传 SQL，你需要在 prepare 时就完成 SQL 重写，并缓存重写后的 SQL 与 signature 的映射。
+        return super.prepare(ch, sql, maxRowCount);
+    }
+
+    @Override
     public ExecuteResult prepareAndExecute(StatementHandle sh, String sql, long maxRowCount,
                                            int maxRowsInFirstFrame, PrepareCallback callback) throws NoSuchStatementException {
+        LOG.info("服务端 prepareAndExecute 被调用");
+
         final ExecuteResult result = super.prepareAndExecute(sh, sql, maxRowCount, maxRowsInFirstFrame, callback);
 
         // 缓存 signature，便于 fetch 时使用
@@ -130,6 +141,8 @@ public class MaskingJdbcMeta extends JdbcMeta {
     @Override
     public Frame fetch(StatementHandle sh, long offset, int fetchMaxRowCount)
             throws NoSuchStatementException, MissingResultsException {
+        LOG.info("fetch called: sh={}, offset={}, fetchMaxRowCount={}", sh, offset, fetchMaxRowCount);
+
         Frame originalFrame = super.fetch(sh, offset, fetchMaxRowCount);
 
         Signature signature = sh.signature;

@@ -1,7 +1,6 @@
 package com.whosly.avacita.server.connect.syntax.meta;
 
 import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.jdbc.JdbcMeta;
 import org.apache.calcite.config.Lex;
@@ -58,24 +57,6 @@ public class AutoHintsJdbcMeta extends JdbcMeta {
         String rewrittenSql = rewriteSql(sql);
 
         return super.prepareAndExecute(h, rewrittenSql, maxRowCount, maxRowsInFirstFrame, callback);
-    }
-
-    @Override
-    public Frame fetch(Meta.StatementHandle sh, long offset, int fetchMaxRowCount) throws NoSuchStatementException, MissingResultsException {
-        Frame originalFrame = super.fetch(sh, offset, fetchMaxRowCount);
-
-//        // 加密特定列（如 "credit_card"）
-//        return encryptFrame(originalFrame, "credit_card");
-//        // 加密"name"列
-//        List<Object> encryptedData = originalFrame.rows.stream()
-//                .map(row -> {
-//                    String name = (String) row.get(1);
-//                    return new Object[]{row.get(0), "name" + name};
-//                })
-//                .collect(Collectors.toList());
-//        return new Frame(offset, true, encryptedData);
-
-        return originalFrame;
     }
 
     private String rewriteSql(String originalSql) {

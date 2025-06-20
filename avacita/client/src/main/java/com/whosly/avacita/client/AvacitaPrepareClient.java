@@ -8,12 +8,14 @@ import java.util.Properties;
 public class AvacitaPrepareClient {
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
         System.out.println("AvacitaClient");
-        Class.forName("com.whosly.avacita.driver.EncDriver");
+        Class.forName("org.apache.calcite.avatica.remote.Driver");
+//        Class.forName("com.whosly.avacita.driver.EncDriver");
 
         Properties prop = new Properties();
         prop.put("serialization", "protobuf");
 
-        String url = "jdbc:enc:url=http://localhost:5888";
+        String url = "jdbc:avatica:remote:url=http://localhost:5888";
+//        String url = "jdbc:enc:url=http://localhost:5888";
         String sql = "SELECT * FROM t_emp WHERE id > ?";
 
         try (Connection conn = DriverManager.getConnection(url, prop)) {
