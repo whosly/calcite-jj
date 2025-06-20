@@ -1,18 +1,12 @@
 package com.whosly.avacita.server.query.mask.mysql;
 
 import com.whosly.avacita.server.query.mask.ResultSetMeta;
-import com.whosly.avacita.server.query.mask.rule.MaskingCursor;
-import com.whosly.avacita.server.query.mask.rule.MaskingResultSet;
-import com.whosly.avacita.server.query.mask.rule.MaskingResultSetMetaData;
 import com.whosly.avacita.server.query.mask.rule.MaskingRuleConfig;
 import com.whosly.avacita.server.query.mask.util.ValueMaskingStrategy;
 import com.whosly.calcite.schema.Schemas;
 import com.whosly.com.whosly.calcite.schema.mysql.MysqlSchemaLoader;
 import org.apache.calcite.avatica.*;
 import org.apache.calcite.avatica.jdbc.JdbcMeta;
-import org.apache.calcite.avatica.jdbc.StatementInfo;
-import org.apache.calcite.avatica.remote.TypedValue;
-import org.apache.calcite.avatica.util.Cursor;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.rel.type.RelDataType;
@@ -31,11 +25,21 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
+/**
+ * 1. 在 prepareAndExecute 中：调用父类的方法获取原始结果，然后直接对结果中的第一个数据帧（firstFrame）进行脱敏处理。
+ * prepareAndExecute 只会对首批数据（firstFrame）进行脱敏
+ *
+ * 2. 在 fetch 中：拦截后续的数据帧，并对它们进行脱敏处理。
+ * 后续通过 fetch 方法分批获取的数据帧（Frame），如果没有在 fetch 里做脱敏处理，这些数据就不会被脱敏。
+ */
 public class MaskingJdbcMeta extends JdbcMeta {
-    private final Logger LOG = LoggerFactory.getLogger(MaskingJdbcMeta.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MaskingJdbcMeta.class);
 
-    private MaskingConfigMeta maskingConfigMeta;
+    private final MaskingConfigMeta maskingConfigMeta;
     private SqlParser.Config parserConfig;
     private ResultSetMeta currentResultSetMeta;
 
@@ -44,17 +48,12 @@ public class MaskingJdbcMeta extends JdbcMeta {
      */
     private final SchemaPlus rootSchema = Frameworks.createRootSchema(true);
 
-    public MaskingJdbcMeta(String url, MaskingConfigMeta maskingConfigMeta) throws SQLException {
-        super(url);
-        this.maskingConfigMeta = maskingConfigMeta;
-
-        init();
-    }
+    // 用于缓存 statementId -> signature
+    private final Map<String, Signature> signatureCache = new ConcurrentHashMap<>();
 
     public MaskingJdbcMeta(String url, Properties info, MaskingConfigMeta maskingConfigMeta) throws SQLException {
         super(url, info);
         this.maskingConfigMeta = maskingConfigMeta;
-
         init();
     }
 
@@ -64,21 +63,11 @@ public class MaskingJdbcMeta extends JdbcMeta {
                 .setLex(Lex.MYSQL)                  // 设置词法分析器为 MySQL 模式
                 .setConformance(SqlConformanceEnum.MYSQL_5)  // 支持 MySQL 5.x 语法
                 .build();
-
-//        // 创建框架配置
-//        FrameworkConfig config = Frameworks.newConfigBuilder()
-//                .defaultSchema(rootSchema)
-//                .parserConfig(parserConfig)         // 应用解析器配置
-//                .build();
-//        this.frameworkConfig = config;
-//
-//        // 使用配置创建查询规划器
-//        Planner planner = Frameworks.getPlanner(config);
     }
 
     // ====================== 连接管理 ======================
     @Override
-    public void openConnection(ConnectionHandle ch, Map<String, String> properties) {
+    public void openConnection(ConnectionHandle ch, java.util.Map<String, String> properties) {
         super.openConnection(ch, properties);
 
         try {
@@ -107,9 +96,6 @@ public class MaskingJdbcMeta extends JdbcMeta {
             } else {
                 LOG.error("无法找到数据库 schema: {}", dbName);
             }
-
-//            Connection connection = getConnection(ch.id);
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -121,245 +107,112 @@ public class MaskingJdbcMeta extends JdbcMeta {
     }
 
     // ====================== SQL 执行 ======================
-    // prepare
-    /**
-     * INSERT、DELETE、UPDATE、SELECT
-     */
     @Override
-    public Meta.ExecuteResult prepareAndExecute(Meta.StatementHandle sh, String sql, long maxRowCount,
-                                                Meta.PrepareCallback callback) throws NoSuchStatementException {
-
-//        try {
-//            String rewriteSql = rewriteSql(sql);
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-
-        // 获取原始结果
-        Meta.ExecuteResult result = super.prepareAndExecute(sh, sql, maxRowCount, callback);
-
-        List<MetaResultSet> maskedResults = new ArrayList<>();
-        for (MetaResultSet metaRs : result.resultSets) {
-            // 仅处理查询结果集（updateCount == -1 表示查询）
-            if (metaRs.updateCount == -1 && metaRs.signature != null) {
-                // 创建列脱敏规则映射
-                Map<Integer, MaskingRuleConfig> columnRules = new HashMap<>();
-                List<ColumnMetaData> columns = metaRs.signature.columns;
-
-                for (int i = 0; i < columns.size(); i++) {
-                    ColumnMetaData col = columns.get(i);
-                    columnRules.put(i + 1, maskingConfigMeta.getMatchingRule(
-                            col.schemaName,
-                            col.tableName,
-                            col.columnName
-                    ));
-                }
-
-                // 创建脱敏后的结果集
-                maskedResults.add(MetaResultSet.create(
-                        sh.connectionId,
-                        sh.id,
-                        true,
-                        metaRs.signature,
-                        new MaskingCursor(
-                                CursorFactory.record(
-                                        Object[].class,
-                                        null,
-                                        metaRs.signature.columns.stream()
-                                                .map(col -> col.columnName)
-                                                .collect(java.util.stream.Collectors.toList())
-                                ).createCursor(sh), // 创建基础Cursor
-                                columnRules
-                        ).toFrame()
-                ));
-            } else {
-                // 保持非查询结果不变
-                maskedResults.add(metaRs);
-            }
-        }
-
-        return new Meta.ExecuteResult(maskedResults);
-    }
-
-    /**
-     * INSERT、DELETE、UPDATE、SELECT
-     */
-    @Override
-    public ExecuteResult prepareAndExecute(StatementHandle stmtHandle, String sql, long maxRowCount,
+    public ExecuteResult prepareAndExecute(StatementHandle sh, String sql, long maxRowCount,
                                            int maxRowsInFirstFrame, PrepareCallback callback) throws NoSuchStatementException {
-        try {
-            String rewrittenSql = rewriteSql(sql);
+        final ExecuteResult result = super.prepareAndExecute(sh, sql, maxRowCount, maxRowsInFirstFrame, callback);
 
-            ExecuteResult executeResult = super.prepareAndExecute(stmtHandle, rewrittenSql, maxRowCount, maxRowsInFirstFrame, callback);
-
-            StatementInfo statementInfo = getStatementCache().getIfPresent(stmtHandle.id);
-            if (statementInfo != null) {
-                getCurrentColumnList(statementInfo, executeResult);
-
-                LOG.info("prepareAndExecute ResultSetMeta :{}。", this.currentResultSetMeta);
+        // 缓存 signature，便于 fetch 时使用
+        if (result.resultSets != null && !result.resultSets.isEmpty()) {
+            MetaResultSet mrs = result.resultSets.get(0);
+            if (mrs.signature != null) {
+                signatureCache.put(String.valueOf(sh.id), mrs.signature);
             }
-
-            // 替换为自定义ResultSet
-            if (executeResult.resultSets != null && !executeResult.resultSets.isEmpty()) {
-                for (MetaResultSet queryResult : executeResult.resultSets) {
-                    if (queryResult.updateCount == -1 && queryResult.signature != null) {
-                        // 使用Signature对象创建自定义的MetaData
-                        ResultSetMetaData metaData = new MaskingResultSetMetaData(
-                                queryResult.signature, getMaskingFunctions()
-                        );
-
-                        // 创建一个包装了原始结果集的MaskingResultSet
-                        // 注意：这里需要从其他地方获取真正的ResultSet对象
-                        // 假设executeResult提供了获取原始ResultSet的方法
-                        ResultSet originalResultSet = getOriginalResultSet(queryResult);
-
-                        if (originalResultSet != null) {
-                            queryResult.resultSet = new MaskingResultSet(
-                                    originalResultSet, metaData, getMaskingFunctions()
-                            );
-                        }
-                    }
-                }
-            }
-
-            return executeResult;
-        } catch (Exception e) {
-            throw new RuntimeException("执行失败: " + e.getMessage().toString());
         }
+
+        final List<MetaResultSet> maskedResultSets = result.resultSets.stream()
+                .map(this::maskResultSet)
+                .collect(Collectors.toList());
+
+        return new ExecuteResult(maskedResultSets);
     }
 
-    /**
-     * 是从已执行的查询中获取结果集，此时 ResultSet 可能已处于关闭状态。应确保在 prepareAndExecute 中处理元数据和数据，而不是在 fetch 中。
-     */
     @Override
-    public Frame fetch(Meta.StatementHandle sh, long offset, int fetchMaxRowCount) throws NoSuchStatementException, MissingResultsException {
+    public Frame fetch(StatementHandle sh, long offset, int fetchMaxRowCount)
+            throws NoSuchStatementException, MissingResultsException {
         Frame originalFrame = super.fetch(sh, offset, fetchMaxRowCount);
 
         Signature signature = sh.signature;
-        if(signature == null) {
-            return desensitizeFrame(originalFrame, this.currentResultSetMeta.getProjectMetaData());
+        if (signature == null) {
+            signature = signatureCache.get(String.valueOf(sh.id));
+        }
+        if (signature != null) {
+            return desensitizeFrame(originalFrame, signature);
+        }
+        return originalFrame;
+    }
+
+    /**
+     * 对单个 MetaResultSet（包括其 firstFrame）进行脱敏
+     */
+    private MetaResultSet maskResultSet(MetaResultSet resultSet) {
+        // 只处理包含查询结果的 ResultSet
+        if (resultSet.updateCount != -1 || resultSet.signature == null || resultSet.firstFrame == null) {
+            return resultSet;
         }
 
-        return desensitizeFrame(originalFrame, signature);
-    }
+        // 对 firstFrame 进行脱敏
+        Frame maskedFrame = desensitizeFrame(resultSet.firstFrame, resultSet.signature);
 
-    private Meta.CursorFactory decorateCursorFactory(Meta.CursorFactory factory,
-                                                     Map<Integer, MaskingRuleConfig> rules) {
-
-        return new Meta.CursorFactory(
-                factory.style,
-                factory.clazz,
-                factory.fields,
-                factory.fieldNames
-        ) {
-            // 重写实际创建Cursor的方法（根据Avatica源码确认方法签名）
-            @Override
-            public Cursor createCursor(SchemaPlus schema, Meta.StatementHandle handle,
-                                       List<TypedValue> parameters, Frame firstFrame) {
-                return new MaskingCursor(
-                        super.createCursor(schema, handle, parameters, firstFrame),
-                        rules
-                );
-            }
-        };
+        // 使用脱敏后的 Frame 创建新的 MetaResultSet
+        return MetaResultSet.create(
+                resultSet.connectionId,
+                resultSet.statementId,
+                resultSet.ownStatement,
+                resultSet.signature,
+                maskedFrame,
+                resultSet.updateCount
+        );
     }
 
     /**
-     * 安全的脱敏处理
+     * 对数据帧（Frame）中的行数据进行脱敏处理
      */
     private Frame desensitizeFrame(Frame originalFrame, Signature signature) {
-        List<ColumnMetaData> columns = signature.columns;
-
-        return desensitizeFrame(originalFrame, columns);
+        if (originalFrame.rows == null) {
+            return originalFrame;
+        }
+        return desensitizeFrame(originalFrame, signature.columns);
     }
 
-    /**
-     * 安全的脱敏处理
-     */
     private Frame desensitizeFrame(Frame originalFrame, List<ColumnMetaData> columns) {
-        List<Object> encryptedRows = new ArrayList<>();
+        List<Object> maskedRows = new ArrayList<>();
 
         for (Object row : originalFrame.rows) {
             Object[] dataRow = (Object[]) row;
-            Object[] encryptedRow = new Object[dataRow.length];
+            Object[] maskedRow = new Object[dataRow.length];
 
             for (int i = 0; i < dataRow.length; i++) {
                 ColumnMetaData column = columns.get(i);
-
-                // 根据列名和规则应用脱敏
-                encryptedRow[i] = applyMask(
-                        dataRow[i], StringUtils.isEmpty(column.schemaName) ? column.catalogName : column.schemaName,
-                        column.tableName, column.columnName
+                // 根据列元数据和规则应用脱敏
+                maskedRow[i] = applyMask(
+                        dataRow[i],
+                        StringUtils.defaultIfEmpty(column.schemaName, column.catalogName),
+                        column.tableName,
+                        column.columnName
                 );
             }
-
-            encryptedRows.add(encryptedRow);
+            maskedRows.add(maskedRow);
         }
 
-        return new Frame(originalFrame.offset, originalFrame.done, encryptedRows);
+        return new Frame(originalFrame.offset, originalFrame.done, maskedRows);
     }
 
+    /**
+     * 根据规则应用脱敏策略
+     */
     private Object applyMask(Object value, String schema, String table, String column) {
-        // 查询脱敏规则并应用
-        MaskingRuleConfig columnRole = maskingConfigMeta.getMatchingRule(schema, table, column);
+        if (value == null) {
+            return null;
+        }
 
-        if(columnRole == null) {
+        MaskingRuleConfig columnRule = maskingConfigMeta.getMatchingRule(schema, table, column);
+
+        if (columnRule == null) {
             return value;
         }
 
-        return ValueMaskingStrategy.mask(value, columnRole);
-    }
-
-    private ResultSetMeta getCurrentColumnList(StatementInfo statementInfo, ExecuteResult executeResult) {
-        try {
-            ResultSet rs = statementInfo.getResultSet();
-            if(rs.isClosed()) {
-                return ResultSetMeta.empty();
-            }
-
-            ResultSetMetaData metaData = rs.getMetaData();
-            int columnCount = metaData.getColumnCount();
-
-            List<String> header = new ArrayList<>(columnCount);
-
-            String schemaName = metaData.getSchemaName(1);
-            String tableName = metaData.getTableName(1);
-
-            for (int i = 0; i < columnCount; i++) {
-                header.add(metaData.getColumnName(i + 1));
-            }
-
-            // sql 语句中的列投影
-            List<ColumnMetaData> projectMetaData = executeResult.resultSets.stream()
-                    .map(m -> {
-                        return m.signature.columns;
-                    }).toList()
-                    .stream().flatMap(List::stream).toList();
-
-            if(StringUtils.isEmpty(schemaName) && projectMetaData != null && !projectMetaData.isEmpty()) {
-                schemaName = projectMetaData.stream().findFirst()
-                        .map(m -> {
-                            if(StringUtils.isEmpty(m.schemaName)) {
-                                return m.catalogName;
-                            }
-                            return m.schemaName;
-                        })
-                        .orElse("");
-            }
-
-            this.currentResultSetMeta = ResultSetMeta.builder()
-                    .schemaName(schemaName)
-                    .tableName(tableName)
-                    .projects(Collections.unmodifiableList(header))
-                    .projectMetaData(projectMetaData)
-                    .build();
-
-            return this.currentResultSetMeta;
-        } catch (SQLException ex) {
-            LOG.error("error cause:", ex);
-        }
-
-        return ResultSetMeta.empty();
+        return ValueMaskingStrategy.mask(value, columnRule);
     }
 
     // ====================== SQL 改写逻辑 ======================
@@ -380,4 +233,10 @@ public class MaskingJdbcMeta extends JdbcMeta {
         return rewriteSql;
     }
 
+    @Override
+    public void closeStatement(StatementHandle sh) {
+        // 每当 Avatica Server 关闭一个 Statement 时，都会移除对应的 signature 缓存。 Statement 生命周期和 signature 是一一对应的。
+        super.closeStatement(sh);
+        signatureCache.remove(String.valueOf(sh.id));
+    }
 }

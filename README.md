@@ -59,6 +59,13 @@ copy至此项目中。
 
 [README.md](./calcite-schema/README.md)
 
+
+## avacita
+基于 avacita 实现各种数据库jdbc查询的例子
+
+[README.md](./avacita/README.md)
+
+
 # 编译
 ```
 mvn clean initialize

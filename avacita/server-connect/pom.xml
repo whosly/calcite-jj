@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>server-connect</artifactId>
+    <description>连接</description>
 
     <dependencies>
         <dependency>

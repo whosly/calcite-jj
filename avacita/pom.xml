@@ -21,6 +21,8 @@
         <module>server-connect-syntax</module>
         <!-- 服务端： 查询脱敏(rule) -->
         <module>server-query-mask</module>
+        <!-- 服务端： 查询脱敏(rule)-SQL改写 -->
+        <module>server-query-mask-rewrite</module>
         <!-- 服务端： SQL加解密实现 -->
         <module>server-all-enc</module>
     </modules>
