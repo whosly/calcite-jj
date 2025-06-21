@@ -1,4 +1,4 @@
-package com.whosly.avacita.server.query.mask.rule;
+package com.whosly.avacita.server.query.mask.rewrite.rule;
 
 import org.apache.commons.lang3.StringUtils;
 

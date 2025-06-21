@@ -1,4 +1,4 @@
-package com.whosly.avacita.server.query.mask;
+package com.whosly.avacita.server.query.mask.rewrite;
 
 import lombok.*;
 import org.apache.calcite.avatica.ColumnMetaData;

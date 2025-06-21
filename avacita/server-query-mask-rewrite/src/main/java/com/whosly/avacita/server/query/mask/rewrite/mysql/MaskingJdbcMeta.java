@@ -1,7 +1,7 @@
-package com.whosly.avacita.server.query.mask.mysql;
+package com.whosly.avacita.server.query.mask.rewrite.mysql;
 
-import com.whosly.avacita.server.query.mask.rule.MaskingRuleConfig;
-import com.whosly.avacita.server.query.mask.rule.MaskingRuleType;
+import com.whosly.avacita.server.query.mask.rewrite.rule.MaskingRuleConfig;
+import com.whosly.avacita.server.query.mask.rewrite.rule.MaskingRuleType;
 import org.apache.calcite.avatica.*;
 import org.apache.calcite.avatica.jdbc.JdbcMeta;
 import org.apache.calcite.config.Lex;

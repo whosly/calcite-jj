@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>server-query-mask</artifactId>
-    <description>服务端： 查询脱敏(rule)</description>
+    <description>服务端： 查询脱敏</description>
 
     <dependencies>
         <dependency>

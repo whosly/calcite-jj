@@ -23,7 +23,7 @@ public class AvacitaPrepareClient {
             final PreparedStatement pstmt = conn.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 
             // 1. 设置参数（示例：查询 id > 2122 的记录）
-            pstmt.setInt(1, 2122);
+            pstmt.setInt(1, 756);
 
             final ResultSet rs = pstmt.executeQuery();
 

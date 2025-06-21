@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>server-query-mask-rewrite</artifactId>
-    <description>服务端： 查询脱敏(rule)-SQL改写</description>
+    <description>服务端： 查询脱敏-SQL改写</description>
 
     <dependencies>
         <dependency>
