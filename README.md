@@ -20,6 +20,9 @@ calcite parser代码生成逻辑
 * [calcite-schema](./calcite-schema/)
   * 多种数据源加载的示例
   * 自定义语法 submit job as query 的示例
+* [avacita](./avacita/)
+  * 基于 avacita 实现各种数据库jdbc查询的例子
+
 
 # 模块
 

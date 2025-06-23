@@ -1,0 +1,9 @@
+schema,table,column,rule_type,rule_params...,enabled
+demo,t_emp,id,keep,,TRUE
+demo,t_emp,name,mask_right,3,TRUE
+demo,t_emp,tel,mask_middle,3,4,TRUE
+demo,t_emp,cert_no,mask_full,,TRUE
+demo,t_emp,email,mask_left,4,TRUE
+public,orders,order_id,keep,,TRUE
+public,orders,amount,round,100,TRUE
+public,orders,customer_id,hash,,TRUE

@@ -1,6 +1,5 @@
-package com.whosly.avacita.server.query.mask.mysql;
+package com.whosly.avacita.server.query.mask.rule;
 
-import com.whosly.avacita.server.query.mask.rule.MaskingRuleConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

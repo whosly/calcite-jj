@@ -1,6 +1,5 @@
-package com.whosly.avacita.server.query.mask.rewrite.mysql;
+package com.whosly.avacita.server.query.mask.rewrite.rule.rules;
 
-import com.whosly.avacita.server.query.mask.rewrite.rule.MaskingRuleConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

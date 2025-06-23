@@ -3,7 +3,7 @@ package com.whosly.avacita.server.query.mask;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import com.whosly.avacita.server.query.mask.mysql.MaskingConfigMeta;
+import com.whosly.avacita.server.query.mask.rule.MaskingConfigMeta;
 import com.whosly.avacita.server.query.mask.mysql.MaskingJdbcMeta;
 import org.apache.calcite.avatica.jdbc.JdbcMeta;
 import org.apache.calcite.avatica.remote.Driver;

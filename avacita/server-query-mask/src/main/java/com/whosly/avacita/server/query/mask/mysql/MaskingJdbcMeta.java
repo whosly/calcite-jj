@@ -1,6 +1,7 @@
 package com.whosly.avacita.server.query.mask.mysql;
 
 import com.whosly.avacita.server.query.mask.ResultSetMeta;
+import com.whosly.avacita.server.query.mask.rule.MaskingConfigMeta;
 import com.whosly.avacita.server.query.mask.rule.MaskingRuleConfig;
 import com.whosly.avacita.server.query.mask.util.ValueMaskingStrategy;
 import com.whosly.calcite.schema.Schemas;
