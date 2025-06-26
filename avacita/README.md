@@ -1,6 +1,6 @@
 # avacita
 
-使用 avatica 1.26.0, calcite 1.35.0 实现的jdbc驱动的连接和查询，并 在server端（即AvacitaConnectQueryMaskServer等server实现中），实现查询sql的改写将指定字段进行改写，实现脱敏处理。
+使用 avatica 1.26.0, calcite 1.39.0 实现的jdbc驱动的连接和查询，并 在server端（即AvacitaConnectQueryMaskServer等server实现中），实现查询sql的改写将指定字段进行改写，实现脱敏处理。
 
 ## client - 客户端
 avatica 的客户端实现

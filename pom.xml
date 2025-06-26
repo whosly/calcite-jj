@@ -24,12 +24,14 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <skipTests>false</skipTests>
 
+        <calcite.version>1.39.0</calcite.version>
         <!-- Jul 26, 2023 -->
-        <calcite.version>1.35.0</calcite.version>
+<!--        <calcite.version>1.35.0</calcite.version>-->
 <!--        <calcite.version>1.36.0</calcite.version>-->
 <!--        <calcite.version>1.38.0</calcite.version>-->
         <!-- 该版本的 avatica 1.26.0 与 httpclient5、httpcore5、jetty(9.4.56.v20240826) 适配  -->
         <avatica.version>1.26.0</avatica.version>
+
         <httpclient5.version>5.4.1</httpclient5.version>
         <httpcore5.version>5.3.1</httpcore5.version>
     </properties>
