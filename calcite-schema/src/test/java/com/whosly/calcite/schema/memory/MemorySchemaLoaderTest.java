@@ -11,7 +11,7 @@ public class MemorySchemaLoaderTest {
 
     @Test
     public void testLoadSchema() {
-        Schema schema = MemorySchemaLoader.loadSchema();
+        Schema schema = MemorySchemaLoader.loadReflectiveSchema();
         Assert.assertTrue(schema instanceof ReflectiveSchema);
 
         ReflectiveSchema cs = (ReflectiveSchema) schema;

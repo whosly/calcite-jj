@@ -5,11 +5,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 脱敏的配置
@@ -19,7 +22,6 @@ public class MaskingConfigMeta {
     private final String configPath;
     private final Map<String, List<MaskingRuleConfig>> maskingRules = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     private long lastLoadTime = 0L;
 
     public MaskingConfigMeta(String configPath) {
@@ -28,6 +30,9 @@ public class MaskingConfigMeta {
         loadConfig();
         startWatching();
     }
+
+    // A regex to parse CSV rows. Handles quoted fields.
+    private static final Pattern CSV_PATTERN = Pattern.compile("(\"[^\"]*\"|[^,]*),?");
 
     // 加载脱敏配置文件
     private void loadConfig() {
@@ -39,7 +44,7 @@ public class MaskingConfigMeta {
         // 清空旧规则
         maskingRules.clear();
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
             boolean isHeader = true;
             while ((line = reader.readLine()) != null) {
@@ -47,29 +52,39 @@ public class MaskingConfigMeta {
                     isHeader = false;
                     continue;
                 }
-                // 跳过空行
-                if (line.trim().isEmpty()) continue;
+                if (line.trim().isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
 
-                String[] parts = line.split(",");
-                if (parts.length < 6) continue;
+                List<String> parts = new ArrayList<>();
+                Matcher matcher = CSV_PATTERN.matcher(line);
+                while (matcher.find()) {
+                    String part = matcher.group(1);
+                    if (part != null) {
+                        // Remove quotes if present
+                        if (part.startsWith("\"") && part.endsWith("\"")) {
+                            part = part.substring(1, part.length() - 1);
+                        }
+                        parts.add(part.trim());
+                    }
+                }
+                if (line.endsWith(",")) {
+                    parts.add("");
+                }
 
-                String schema = parts[0];
-                String table = parts[1];
-                String column = parts[2];
-                String ruleType = parts[3];
-                String enabledStr = parts[parts.length - 1];
-                boolean enabled = Boolean.parseBoolean(enabledStr.trim());
+
+                if (parts.size() < 6) continue;
+
+                String schema = parts.get(0);
+                String table = parts.get(1);
+                String column = parts.get(2);
+                String ruleType = parts.get(3);
+                String ruleParamsStr = parts.get(4);
+                boolean enabled = Boolean.parseBoolean(parts.get(5).trim());
+
                 if (!enabled) continue;
 
-                // rule_params: parts[4] 到 parts[length-2]
-                String[] ruleParams;
-                if (parts.length > 6) {
-                    ruleParams = Arrays.copyOfRange(parts, 4, parts.length - 1);
-                } else if (parts.length == 6 && !StringUtils.isBlank(parts[4])) {
-                    ruleParams = new String[]{parts[4]};
-                } else {
-                    ruleParams = new String[0];
-                }
+                String[] ruleParams = parseRuleParams(ruleParamsStr);
 
                 MaskingRuleConfig rule = new MaskingRuleConfig(
                         schema, table, column, ruleType, ruleParams
@@ -79,30 +94,37 @@ public class MaskingConfigMeta {
                 maskingRules.computeIfAbsent(key, k -> new ArrayList<>()).add(rule);
             }
 
-            LOG.trace("成功加载脱敏配置: {}，规则数量: {}， 规则：{}。",
+            LOG.info("成功加载脱敏配置: {}, 规则数量: {}.",
                     configPath,
-                    maskingRules.values().stream().mapToInt(List::size).sum(),
-                    StringUtils.join(
-                            maskingRules.values().stream().map(rs ->{
-                                        return rs.stream().map(r ->{
-                                            return r.getSchema() + "." + r.getTable() + "." + r.getColumn();
-                                        }).toList();
-                                    }).toList()
-                                    .stream().flatMap(List::stream).toList(),
-                            ",")
+                    maskingRules.values().stream().mapToInt(List::size).sum()
             );
         } catch (IOException e) {
             throw new RuntimeException("加载脱敏配置失败", e);
         }
     }
 
+    private String[] parseRuleParams(String paramsStr) {
+        if (StringUtils.isBlank(paramsStr)) {
+            return new String[0];
+        }
+        return Arrays.stream(paramsStr.split(";"))
+                .map(String::trim)
+                .toArray(String[]::new);
+    }
+
     // 新增热加载检测
     private void startWatching() {
+        InputStream is = getClass().getClassLoader().getResourceAsStream(configPath);
+        if (is == null) {
+            LOG.warn("无法找到配置文件 {} 用于监控，热加载将不会生效。", configPath);
+            return;
+        }
+
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                File configFile = new File(getClass().getClassLoader().getResource(configPath).getFile());
-                long lastModified = configFile.lastModified();
-                if (lastModified > this.lastLoadTime) {
+                File configFile = new File(getClass().getClassLoader().getResource(configPath).toURI());
+                if (configFile.exists() && configFile.lastModified() > this.lastLoadTime) {
+                    LOG.info("检测到配置文件变更，重新加载脱敏规则...");
                     loadConfig();
                     this.lastLoadTime = System.currentTimeMillis();
                 }

@@ -3,6 +3,7 @@ package com.whosly.avacita.server.query.mask.rewrite.rule;
 import java.sql.SQLException;
 import java.util.Properties;
 
+import com.whosly.avacita.server.query.mask.rewrite.rule.mysql.MaskingJdbcMeta;
 import com.whosly.avacita.server.query.mask.rewrite.rule.rules.MaskingConfigMeta;
 import org.apache.calcite.avatica.jdbc.JdbcMeta;
 import org.apache.calcite.avatica.remote.Driver;
@@ -15,7 +16,7 @@ import org.slf4j.LoggerFactory;
  * 查询脱敏服务
  * <p>
  *
- * calcite 1.35.0, avatica 1.26.0， 使用avatica client和 avatica server, 实现rule规则， 通过配置文件(配置允许动态变更)对查询的某字段进行脱敏操作
+ * calcite 1.39.0, avatica 1.26.0， 使用avatica client和 avatica server, 实现rule规则， 通过配置文件(配置允许动态变更)对查询的某字段进行脱敏操作
  */
 public class AvacitaConnectQueryMaskRewriteRuleServer {
     private static final Logger LOG = LoggerFactory.getLogger(AvacitaConnectQueryMaskRewriteRuleServer.class);
@@ -39,7 +40,7 @@ public class AvacitaConnectQueryMaskRewriteRuleServer {
         props.setProperty("password", DB_PASSWORD);
 
         // 创建带脱敏功能的Meta实例
-        final JdbcMeta meta = new JdbcMeta(DB_URL, props);
+        final JdbcMeta meta = new MaskingJdbcMeta(DB_URL, props, maskingConfigMeta);
         final LocalService service = new LocalService(meta);
 
         final HttpServer server = new HttpServer.Builder<>()

@@ -22,7 +22,7 @@ public class SchemasTest {
         schemaMap.put("bugs1", CsvSchemaLoader.loadSchema("bugfix"));
         schemaMap.put("csv", CsvSchemaLoader.loadSchema("csv"));
         // MemorySchema
-        schemaMap.put("hr", MemorySchemaLoader.loadSchema());
+        schemaMap.putAll(MemorySchemaLoader.loadSchemaList());
         // ESSchema
 //        schemaMap.put("es", ESSchemaLoader.loadSchema("localhost", 9200));
 
