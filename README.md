@@ -1,5 +1,9 @@
 # calcite jj 介绍
 
+此仓库已与 [claude-stars](https://gitee.com/whosly/claude-stars) 合并。
+最新示例见 --> [claude-stars](https://gitee.com/whosly/claude-stars)。
+
+
 calcite parser代码生成逻辑
 
 ![code-generate-process](doc/calcite-parser-code-generate-process.png)
